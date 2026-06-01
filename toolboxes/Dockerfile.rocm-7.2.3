@@ -32,6 +32,11 @@ ENV ROCM_PATH=/opt/rocm \
   HIP_DEVICE_LIB_PATH=/opt/rocm/amdgcn/bitcode \
   PATH=/opt/rocm/bin:/opt/rocm/llvm/bin:$PATH
 
+# rocWMMA
+RUN git clone -b release/rocm-rel-7.2 --single-branch https://github.com/ROCm/rocWMMA.git /tmp/rocWMMA \
+  && cp -r /tmp/rocWMMA/library/include/* /opt/rocm/include/ \
+  && rm -rf /tmp/rocWMMA
+
 # ds4
 WORKDIR /opt/ds4
 ARG REPO=https://github.com/antirez/ds4.git
