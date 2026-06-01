@@ -1,0 +1,77 @@
+# build stage
+FROM registry.fedoraproject.org/fedora:43 AS builder
+
+# rocm 7.2.3 repo
+RUN <<'EOF'
+tee /etc/yum.repos.d/rocm.repo <<REPO
+[ROCm-7.2.3]
+name=ROCm7.2.3
+baseurl=https://repo.radeon.com/rocm/rhel10/7.2.3/main
+enabled=1
+priority=50
+gpgcheck=1
+gpgkey=https://repo.radeon.com/rocm/rocm.gpg.key
+REPO
+EOF
+
+# deps
+RUN dnf -y --nodocs --setopt=install_weak_deps=False \
+  --exclude='*sdk*' --exclude='*samples*' --exclude='*-doc*' --exclude='*-docs*' \
+  install \
+  make gcc cmake lld clang clang-devel compiler-rt libcurl-devel ninja-build \
+  rocm-llvm rocm-device-libs hip-runtime-amd hip-devel \
+  rocblas rocblas-devel hipblas hipblas-devel rocm-cmake libomp-devel libomp \
+  rocminfo radeontop \
+  git-core vim sudo rsync patch \
+  && dnf clean all && rm -rf /var/cache/dnf/*
+
+# rocm env
+ENV ROCM_PATH=/opt/rocm \
+  HIP_PATH=/opt/rocm \
+  HIP_CLANG_PATH=/opt/rocm/llvm/bin \
+  HIP_DEVICE_LIB_PATH=/opt/rocm/amdgcn/bitcode \
+  PATH=/opt/rocm/bin:/opt/rocm/llvm/bin:$PATH
+
+# ds4
+WORKDIR /opt/ds4
+ARG REPO=https://github.com/antirez/ds4.git
+ARG BRANCH=rocm
+RUN git clone -b ${BRANCH} --single-branch ${REPO} . \
+  && git clean -xdf \
+  && make rocm ROCM_ARCH=gfx1151 ROCM_PATH=/opt/rocm \
+  && cp ds4 ds4-server ds4-bench /usr/local/bin/
+
+# runtime stage
+FROM registry.fedoraproject.org/fedora-minimal:43
+
+# rocm 7.2.3 repo
+RUN <<'EOF'
+tee /etc/yum.repos.d/rocm.repo <<REPO
+[ROCm-7.2.3]
+name=ROCm7.2.3
+baseurl=https://repo.radeon.com/rocm/rhel10/7.2.3/main
+enabled=1
+priority=50
+gpgcheck=1
+gpgkey=https://repo.radeon.com/rocm/rocm.gpg.key
+REPO
+EOF
+
+# runtime deps
+RUN microdnf -y --nodocs --setopt=install_weak_deps=0 \
+  --exclude='*sdk*' --exclude='*samples*' --exclude='*-doc*' --exclude='*-docs*' \
+  install \
+  bash ca-certificates libatomic libstdc++ libgcc libgomp sudo \
+  hip-runtime-amd hipblas \
+  rocminfo radeontop procps-ng \
+  && microdnf clean all && rm -rf /var/cache/dnf/*
+
+# copy
+COPY --from=builder /usr/local/ /usr/local/
+
+# ld
+RUN echo "/usr/local/lib"  > /etc/ld.so.conf.d/local.conf \
+  && echo "/usr/local/lib64" >> /etc/ld.so.conf.d/local.conf \
+  && ldconfig
+
+CMD ["/bin/bash"]
