@@ -42,6 +42,7 @@ sudo reboot
 **Available Images:**
 - `docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-7.2.4` (Tracks `antirez` upstream)
 - `docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-7.2.4-alantsev` (Tracks `alantsev` fork with newer features)
+- `docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-7.2.4-ejpir` (Tracks `ejpir` experimental upstream-shape ROCm fork for high prefill performance on gfx1151)
 
 ```sh
 toolbox create ds4-rocm-7.2.4 \
@@ -116,7 +117,19 @@ DS4_CUDA_COPY_MODEL_CHUNKED=1 ds4-bench -m ds4flash.gguf \
   --gen-tokens 128
 ```
 
+### ejpir Fork (High Performance)
 
+The `rocm-7.2.4-ejpir` toolbox includes an experimental port by `@ejpir` that heavily optimizes the ROCm implementation towards upstream CUDA kernel shapes, specifically targeted at Strix Halo (`gfx1151`).
+
+**To achieve maximum prefill performance (~197–207 tok/s):**
+1. It relies on ROCm 7.2.3/7.2.4.
+2. It requires using full model copy rather than zero-copy.
+3. High throughput is mostly observed when batched prefill kernels are saturated with larger prompts (e.g., 2048-token chunks).
+
+Run the interactive CLI or server with the fast full preset by exporting `DS4_SERVER_FAST_FULL=1`:
+```sh
+DS4_SERVER_FAST_FULL=1 ds4-server -m ds4flash.gguf --ctx 131072
+```
 
 ### 6. Keep Updated
 
