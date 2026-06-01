@@ -112,17 +112,7 @@ DS4_CUDA_COPY_MODEL_CHUNKED=1 ds4-bench -m ds4flash.gguf \
   --gen-tokens 128
 ```
 
-**MTP (Speculative Decoding) Benchmark:**
-```sh
-DS4_CUDA_COPY_MODEL_CHUNKED=1 ds4-bench -m ds4flash.gguf \
-  --mtp ds4flash-mtp.gguf \
-  --mtp-draft 1 \
-  --prompt-file prompt.txt \
-  --ctx-start 2048 \
-  --ctx-max 65536 \
-  --step-incr 2048 \
-  --gen-tokens 128
-```
+
 
 ### 6. Keep Updated
 
