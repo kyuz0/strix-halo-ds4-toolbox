@@ -6,6 +6,7 @@ set -e
 declare -A TOOLBOXES
 
 TOOLBOXES["ds4-rocm-7.2.3"]="docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-7.2.3 --device /dev/dri --device /dev/kfd --group-add video --group-add render --group-add sudo --security-opt seccomp=unconfined"
+TOOLBOXES["ds4-rocm-7.2.3-alantsev"]="docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-7.2.3-alantsev --device /dev/dri --device /dev/kfd --group-add video --group-add render --group-add sudo --security-opt seccomp=unconfined"
 TOOLBOXES["ds4-rocm7-nightlies"]="docker.io/kyuz0/strix-halo-ds4-toolbox:rocm7-nightlies --device /dev/dri --device /dev/kfd --group-add video --group-add render --group-add sudo --security-opt seccomp=unconfined"
 
 function usage() {

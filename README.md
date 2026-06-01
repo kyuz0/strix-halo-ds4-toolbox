@@ -39,6 +39,10 @@ sudo reboot
 
 **Ubuntu/Debian:** replace `toolbox` with `distrobox`.
 
+**Available Images:**
+- `docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-7.2.3` (Tracks `antirez` upstream)
+- `docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-7.2.3-alantsev` (Tracks `alantsev` fork with newer features)
+
 ```sh
 toolbox create ds4-rocm-7.2.3 \
   --image docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-7.2.3 \
