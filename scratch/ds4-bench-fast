@@ -1,0 +1,137 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT_DIR"
+
+MODEL_DEFAULT="/home/nick/.cache/huggingface/hub/models--cyberneurova--CyberNeurova-DeepSeek-V4-Flash-abliterated-GGUF/snapshots/665c8e035e2602d12d28b84920808b158f337e09/cyberneurova-DeepSeek-V4-Flash-abliterated-Q2_K.gguf"
+
+usage() {
+  cat <<'EOF'
+Usage:
+  DS4_SERVER_FAST_FULL=1 scripts/run_ds4_bench_rocm_upstream.sh [ds4-bench args]
+
+If no ds4-bench args are supplied, defaults are:
+  -m $DS4_MODEL
+  --prompt-file speed-bench/promessi_sposi.txt
+  --ctx-start 2048 --ctx-max 16384 --step-incr 2048 --gen-tokens 32
+  --csv /tmp/ds4_bench_rocm_upstream_fast_full_ctx_TIMESTAMP.csv
+
+Environment:
+  DS4_MODEL=FILE                         GGUF model path
+  DS4_SERVER_FAST_FULL=1                 Apply the same fast-full preset shape as the server launcher
+  DS4_SERVER_PERFLEVEL=high|auto         rocm-smi perflevel; defaults to high; set empty/off/skip to bypass
+  DS4_BENCH_ALLOW_WITH_SERVER=1          Allow running while ds4-server pidfile process is alive
+  DS4_BENCH_PROMPT_FILE=FILE             Default prompt file
+  DS4_BENCH_CTX_START=N                  Default ctx-start; default 2048
+  DS4_BENCH_CTX_MAX=N                    Default ctx-max; default 16384
+  DS4_BENCH_STEP_INCR=N                  Default step-incr; default 2048
+  DS4_BENCH_GEN_TOKENS=N                 Default gen-tokens; default 32
+  DS4_BENCH_CSV=FILE                     Default CSV output path
+  DS4_CUDA_MOE_PROFILE=1                 Profile MoE stages in the upstream-shaped backend
+  DS4_CUDA_INDEXED_HEADS32=1             Prototype 32-head indexed-attention block on gfx1151
+  DS4_CUDA_ATTN_Q_B_CUBLAS=1             Use f16 GEMM/cache for the large q_b projection
+  DS4_CUDA_ATTN_Q_B_PRELOAD=1            Preload q_b Q8_0 weights into the f16 cache
+  DS4_CUDA_ATTN_Q_B_F16_OUT=1            Write q_b GEMM to f16 and fuse head norm/rope to float
+  DS4_SERVER_Q8_WMMA_4W=1                Experimental 4-wave 64x64 Q8 WMMA path for large prefill batches; FAST_FULL default 1
+  DS4_SERVER_Q8_WMMA_4W_MIN_TOKENS=N     Minimum token batch for 4-wave Q8 WMMA; default 256
+  DS4_SERVER_Q8_WMMA_4W_MIN_OUT=N        Minimum output rows for 4-wave Q8 WMMA; default 1024
+  DS4_SERVER_Q8_PREQUANT_DECODE=0        Disable default FAST_FULL prequantized Q8 decode matvecs
+  DS4_SERVER_Q8_DECODE_RPB=1|2|4|8|16|32 Rows/block for single-token Q8 decode matvecs; FAST_FULL default 1
+  DS4_SERVER_Q8_HC_DECODE_RPB=1|2|4|8|16|32 Rows/block for fused Q8 HC-expand decode matvecs; FAST_FULL default 16
+  DS4_SERVER_ATTN_OUT_LOW_DECODE_RPB=1|2|4|8|16|32 Rows/block for decode attn_output_a low projection; FAST_FULL default 32
+  DS4_SERVER_OLDHIP_ATTENTION_DECODE=1  Use the old-HIP decode attention kernel; FAST_FULL default 1
+  DS4_SERVER_QKV_PAIR_DECODE=1           Opt in shared-quant Q/KV decode projection pair; FAST_FULL default 1
+  DS4_SERVER_OVERLAP_SHARED_GATE_UP=0    Disable FAST_FULL async shared-expert gate/up overlap
+  DS4_SERVER_MOE_DECODE_RPB=N            Rows/block for exact single-token Q2_K MoE decode; FAST_FULL default 1
+  DS4_SERVER_MOE_DECODE_Q8K_GATEUP=0     Disable FAST_FULL Q8_K activation MoE gate/up decode path
+  DS4_SERVER_MOE_DECODE_Q8K_DOWN=1       Opt in Q8_K mid/down MoE decode path; FAST_FULL default 1
+  DS4_SERVER_ATTN_OUT_LOW_SPLITK=1       Restore old split-K decode attn_output_a path; FAST_FULL defaults to prequant
+  DS4_SERVER_SHARED_GATE_UP_FUSED_W32=1  Restore old fused shared gate/up float-row decode path; FAST_FULL defaults to prequant pair
+  DS4_SERVER_ATTENTION_OUTPUT_F16_OUT=0  Disable default FAST_FULL attention-output f16 projection
+  DS4_SERVER_ATTENTION_OUTPUT_F16_OUT_MIN_TOKENS=N Optional attention f16-output minimum; default 0
+  DS4_SERVER_SHARED_DOWN_F16_OUT=0       Disable default FAST_FULL shared-down f16 projection
+  DS4_SERVER_SHARED_DOWN_F16_OUT_MIN_TOKENS=N Optional shared-down f16-output minimum; default 0
+  DS4_SERVER_MOE_DECODE_RPB=N            Optional rows/block for exact single-token Q2_K MoE decode
+  DS4_CUDA_MOE_WMMA_MTILES=4|8|16        Hot MoE WMMA token tiles/block
+  DS4_CUDA_MOE_WMMA_F16_MID=1            Hot MoE WMMA stores/reads routed mid as f16
+  DS4_CUDA_MOE_WMMA_F16_MID_ALL=1        Store scalar/cold routed mid scratch as f16 too
+  DS4_CUDA_MOE_WMMA_F16_DOWN=1           Hot MoE WMMA writes hot down as f16 and mixed-sums
+  DS4_CUDA_MOE_WMMA_F16_DOWN_ALL=1       Store all routed MoE down scratch as f16
+  DS4_CUDA_MOE_WMMA_F16_SPLIT=1          Split low-count f16-hot MoE buckets to MTILES=4
+  DS4_CUDA_MOE_WMMA_F16_SPLIT_MIN=64     Count cutoff for the f16-hot split path
+  DS4_CUDA_MOE_WMMA_X_F16=1              Preconvert MoE gate/up input activations to f16 once per chunk
+  DS4_CUDA_MOE_SLOT_PARTIAL=1            Route-slot partial down layout [slot, token, dim]
+  DS4_CUDA_MOE_WMMA_DIRECT_SUM=1         Atomic-add routed MoE down directly to output
+  DS4_CUDA_MOE_DENSE_HOT=1               Prototype dense-hot hipBLASLt MoE path
+  DS4_CUDA_MOE_DENSE_HOT_TOP=1|2|4       Number of hottest experts/layer to route through dense-hot
+
+All DS4_SERVER_* fast-full knobs are translated to both DS4_CUDA_* and DS4_HIP_*
+where the backend has historical aliases, so the upstream-shaped ROCm binary gets
+what the server preset intended.
+EOF
+}
+
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+  usage
+  exit 0
+fi
+
+source "/usr/local/bin/rocm_settings.sh"
+
+# One-command max-performance profile. Keep this intentionally aligned with
+# scripts/start_ds4_server.sh; shared defaults and alias exports live in
+# scripts/rocm_settings.sh.
+export DS4_SERVER_PERFLEVEL="${DS4_SERVER_PERFLEVEL-high}"
+if [[ "${DS4_SERVER_FAST_FULL:-0}" == "1" ]]; then
+  ds4_rocm_apply_fast_full_defaults 2048
+fi
+
+ds4_rocm_apply_tensor_env
+ds4_rocm_apply_prefill_env 128
+ds4_rocm_export_runtime_env
+ds4_rocm_normalize_perflevel_var DS4_SERVER_PERFLEVEL
+
+if [[ "${DS4_SERVER_PERFLEVEL:-}" == "off" || "${DS4_SERVER_PERFLEVEL:-}" == "skip" || "${DS4_SERVER_PERFLEVEL:-}" == "none" ]]; then
+  DS4_SERVER_PERFLEVEL=""
+fi
+if [[ -n "${DS4_SERVER_PERFLEVEL:-}" ]] && command -v rocm-smi >/dev/null 2>&1; then
+  echo "ds4-bench-rocm-upstream: setting ROCm perflevel ${DS4_SERVER_PERFLEVEL}" >&2
+  rocm-smi --setperflevel "${DS4_SERVER_PERFLEVEL}" >&2 || true
+fi
+
+if [[ "${DS4_BENCH_ALLOW_WITH_SERVER:-0}" != "1" ]]; then
+  pidfile="${DS4_SERVER_PID:-/tmp/ds4-server.pid}"
+  if [[ -f "$pidfile" ]]; then
+    oldpid="$(cat "$pidfile" 2>/dev/null || true)"
+    if [[ "$oldpid" =~ ^[0-9]+$ ]] && kill -0 "$oldpid" 2>/dev/null; then
+      echo "ds4-bench-rocm-upstream: refusing to run while ds4-server pid $oldpid is alive" >&2
+      echo "Set DS4_BENCH_ALLOW_WITH_SERVER=1 to override, or stop the server first." >&2
+      exit 1
+    fi
+  fi
+fi
+
+
+
+MODEL="${DS4_MODEL:-$MODEL_DEFAULT}"
+if [[ ! -f "$MODEL" ]]; then
+  echo "ds4-bench-rocm-upstream: model not found: $MODEL" >&2
+  exit 1
+fi
+
+if [[ "$#" -gt 0 ]]; then
+  exec ds4-bench "$@"
+fi
+
+STAMP="$(date +%Y%m%d_%H%M%S)"
+CSV="${DS4_BENCH_CSV:-/tmp/ds4_bench_rocm_upstream_fast_full_ctx_${STAMP}.csv}"
+
+exec ds4-bench \
+  -m "$MODEL" \
+  --prompt-file "${DS4_BENCH_PROMPT_FILE:-speed-bench/promessi_sposi.txt}" \
+  --ctx-start "${DS4_BENCH_CTX_START:-2048}" \
+  --ctx-max "${DS4_BENCH_CTX_MAX:-16384}" \
+  --step-incr "${DS4_BENCH_STEP_INCR:-2048}" \
+  --gen-tokens "${DS4_BENCH_GEN_TOKENS:-32}" \
+  --csv "$CSV"

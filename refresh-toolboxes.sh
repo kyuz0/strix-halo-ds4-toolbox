@@ -8,7 +8,6 @@ declare -A TOOLBOXES
 TOOLBOXES["ds4-rocm-7.2.4"]="docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-7.2.4 --device /dev/dri --device /dev/kfd --group-add video --group-add render --group-add sudo --security-opt seccomp=unconfined"
 TOOLBOXES["ds4-rocm-7.2.4-alantsev"]="docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-7.2.4-alantsev --device /dev/dri --device /dev/kfd --group-add video --group-add render --group-add sudo --security-opt seccomp=unconfined"
 TOOLBOXES["ds4-rocm-7.2.4-ejpir"]="docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-7.2.4-ejpir --device /dev/dri --device /dev/kfd --group-add video --group-add render --group-add sudo --security-opt seccomp=unconfined"
-TOOLBOXES["ds4-rocm7-nightlies"]="docker.io/kyuz0/strix-halo-ds4-toolbox:rocm7-nightlies --device /dev/dri --device /dev/kfd --group-add video --group-add render --group-add sudo --security-opt seccomp=unconfined"
 
 function usage() {
   echo "Usage: $0 [all|toolbox-name1 toolbox-name2 ...]"

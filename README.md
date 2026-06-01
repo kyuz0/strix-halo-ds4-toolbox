@@ -12,8 +12,9 @@ Pre-built images on Docker Hub: **[kyuz0/strix-halo-ds4-toolbox](https://hub.doc
 
 | Tag | Stack | Notes |
 | :--- | :--- | :--- |
-| `rocm-7.2.3` | ROCm 7.2.3 (stable) | Recommended for most users. |
-| `rocm7-nightlies` | ROCm 7 Nightly | Tracks latest AMD developer nightlies. |
+| `rocm-7.2.4` | ROCm 7.2.4 (stable) | Tracks `antirez` upstream. Recommended for most users. |
+| `rocm-7.2.4-alantsev` | ROCm 7.2.4 (stable) | Tracks `alantsev` fork with newer features. |
+| `rocm-7.2.4-ejpir` | ROCm 7.2.4 (stable) | Experimental upstream-shape ROCm fork for high prefill performance on gfx1151. |
 
 ---
 
@@ -121,14 +122,24 @@ ds4-bench -m ds4flash.gguf \
 
 The `rocm-7.2.4-ejpir` toolbox includes an experimental port by `@ejpir` that heavily optimizes the ROCm implementation towards upstream CUDA kernel shapes, specifically targeted at Strix Halo (`gfx1151`).
 
+**Fast Wrapper Scripts:**
+The image bundles optimized bash wrappers that automatically apply the `DS4_SERVER_FAST_FULL=1` environment variables needed for massive prefill speeds.
+
+| Standard Binary | Fast Wrapper Script | Description |
+| :--- | :--- | :--- |
+| `ds4` | `ds4-fast` | Interactive chat CLI |
+| `ds4-server` | `ds4-server-fast` | OpenAI-compatible server |
+| `ds4-bench` | `ds4-bench-fast` | Throughput benchmarking tool |
+
 **To achieve maximum prefill performance (~197–207 tok/s):**
 1. It relies on ROCm 7.2.3/7.2.4.
 2. It requires using full model copy rather than zero-copy.
 3. High throughput is mostly observed when batched prefill kernels are saturated with larger prompts (e.g., 2048-token chunks).
 
-Run the interactive CLI or server with the fast full preset by exporting `DS4_SERVER_FAST_FULL=1`:
+Run the interactive CLI, benchmark, or server using the new `*-fast` wrapper scripts with the fast full preset by exporting `DS4_SERVER_FAST_FULL=1`:
 ```sh
-DS4_SERVER_FAST_FULL=1 ds4-server -m ds4flash.gguf --ctx 131072
+DS4_SERVER_FAST_FULL=1 ds4-server-fast -m ds4flash.gguf --ctx 131072
+DS4_SERVER_FAST_FULL=1 ds4-bench-fast -m ds4flash.gguf --prompt-file prompt.txt --ctx-start 2048 --ctx-max 65536 --step-incr 2048 --gen-tokens 128
 ```
 
 ### 6. Keep Updated
@@ -177,11 +188,8 @@ With 128 GB RAM running q2 quants (~81 GB), a context of 100k–300k tokens is p
 ## Building Locally
 
 ```bash
-# ROCm 7.2.3 (stable)
-docker build -t ds4-rocm-7.2.3 -f toolboxes/Dockerfile.rocm-7.2.3 toolboxes/
-
-# ROCm 7 Nightlies
-docker build -t ds4-rocm7-nightlies -f toolboxes/Dockerfile.rocm7-nightlies toolboxes/
+# ROCm 7.2.4 (stable)
+docker build -t ds4-rocm-7.2.4 -f toolboxes/Dockerfile.rocm-7.2.4 toolboxes/
 ```
 
 ---
