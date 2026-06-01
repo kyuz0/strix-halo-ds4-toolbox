@@ -54,7 +54,7 @@ RUN git clone -b release/rocm-rel-7.2 --single-branch --depth 1 \
 
 # ds4
 WORKDIR /opt/ds4
-ARG REPO=https://github.com/antirez/ds4.git
+ARG REPO=https://github.com/kyuz0/ds4.git
 ARG BRANCH=rocm
 RUN git clone -b ${BRANCH} --single-branch ${REPO} . \
   && git clean -xdf \
