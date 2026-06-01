@@ -32,9 +32,9 @@ ENV ROCM_PATH=/opt/rocm \
   HIP_DEVICE_LIB_PATH=/opt/rocm/amdgcn/bitcode \
   PATH=/opt/rocm/bin:/opt/rocm/llvm/bin:$PATH
 
-# rocWMMA
-RUN git clone -b release/rocm-rel-7.2 --single-branch https://github.com/ROCm/rocWMMA.git /tmp/rocWMMA \
-  && cp -r /tmp/rocWMMA/library/include/* /opt/rocm/include/ \
+# rocWMMA (header-only — place on default system include path for hipcc)
+RUN git clone -b release/rocm-rel-7.2 --single-branch --depth 1 https://github.com/ROCm/rocWMMA.git /tmp/rocWMMA \
+  && cp -r /tmp/rocWMMA/library/include/rocwmma /usr/include/rocwmma \
   && rm -rf /tmp/rocWMMA
 
 # ds4
