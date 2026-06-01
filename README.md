@@ -105,11 +105,11 @@ curl http://127.0.0.1:8000/v1/chat/completions \
 
 ### 5. Benchmarking
 
-`ds4-bench` measures prefill and generation throughput at context frontiers. Make sure to use `DS4_CUDA_COPY_MODEL_CHUNKED=1` to optimize model loading on Strix Halo.
+`ds4-bench` measures prefill and generation throughput at context frontiers.
 
 **Standard Benchmark:**
 ```sh
-DS4_CUDA_COPY_MODEL_CHUNKED=1 ds4-bench -m ds4flash.gguf \
+ds4-bench -m ds4flash.gguf \
   --prompt-file prompt.txt \
   --ctx-start 2048 \
   --ctx-max 65536 \
