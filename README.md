@@ -1,98 +1,29 @@
 # AMD Strix Halo ds4 Toolboxes
 
-This project provides pre-built containers (“toolboxes”) for running the **DeepSeek ds4 backend** on **AMD Ryzen AI Max “Strix Halo”** integrated GPUs (architecture `gfx1151`). Toolbx is the standard developer container system in Fedora (and distrobox works on Ubuntu, Debian, openSUSE, Arch, etc).
+Pre-built containers ("toolboxes") for running **[ds4](https://github.com/antirez/ds4)** — antirez's DeepSeek V4 Flash inference engine — on **AMD Ryzen AI Max "Strix Halo"** integrated GPUs (`gfx1151`).
 
----
-
-### 📦 Project Context
-
-These toolboxes compile the `rocm` branch of the `antirez/ds4` repository using ROCm 7.2.3 and ROCm 7 Nightlies. They expose three compiled backend binaries for hardware-accelerated inference:
-- `ds4` (CLI / Interactive Chat Mode)
-- `ds4-server` (OpenAI-compatible server)
-- `ds4-bench` (Engine benchmarking utility)
-
----
-
-## Table of Contents
-
-- [Stable Configuration](#stable-configuration)
-- [Supported Toolboxes](#supported-toolboxes)
-- [Quick Start](#quick-start)
-- [Host Configuration](#host-configuration)
-- [Building Locally](#building-locally)
-
----
-
-## Stable Configuration
-
-- **OS**: Fedora 42/43 / Ubuntu 24.04+
-- **Linux Kernel**: 6.18.5+
-- **Linux Firmware**: Avoid `linux-firmware-20251125` (it breaks ROCm). Use `20260110` or newer.
+The containers compile the `rocm` branch of `antirez/ds4` and expose the three compiled binaries: `ds4`, `ds4-server`, and `ds4-bench`. Toolbx is the standard developer container system on Fedora; Distrobox works on Ubuntu, Debian, Arch, openSUSE, etc.
 
 ---
 
 ## Supported Toolboxes
 
-The pre-built containers are located on Docker Hub: [kyuz0/strix-halo-ds4-toolbox](https://hub.docker.com/r/kyuz0/strix-halo-ds4-toolbox/tags).
+Pre-built images on Docker Hub: **[kyuz0/strix-halo-ds4-toolbox](https://hub.docker.com/r/kyuz0/strix-halo-ds4-toolbox/tags)**
 
-| Container Tag | Backend/Stack | Purpose / Notes |
+| Tag | Stack | Notes |
 | :--- | :--- | :--- |
-| `rocm-7.2.3` | ROCm 7.2.3 | Latest stable 7.x build. Includes patch support for kernels 6.18.4+. |
-| `rocm7-nightlies` | ROCm 7 Nightly | Tracks the latest ROCm 7 developer nightlies from AMD. |
-
----
-
-## Quick Start
-
-### 1. Create and Enter your Toolbox
-
-**Ubuntu/Debian users:** Remember to replace `toolbox` with `distrobox` in the commands below.
-
-```sh
-# Create the toolbox container
-toolbox create ds4-rocm-7.2.3 \
-  --image docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-7.2.3 \
-  -- --device /dev/dri --device /dev/kfd \
-  --group-add video --group-add render --group-add sudo --security-opt seccomp=unconfined
-
-# Enter the toolbox
-toolbox enter ds4-rocm-7.2.3
-```
-
-### 2. Run Inference or Server Mode
-
-Inside the toolbox, you can call the binaries directly. Make sure to download a compatible DeepSeek GGUF model (e.g. `ds4flash.gguf` or others).
-
-**Interactive CLI mode:**
-```sh
-ds4 --model models/ds4flash.gguf --ctx 32768
-```
-
-**Server mode (OpenAI API compatible):**
-```sh
-ds4-server --model models/ds4flash.gguf --ctx 32768 --host 0.0.0.0 --port 8080
-```
-
-**Benchmarking mode:**
-```sh
-ds4-bench --prompt-file prompt.txt --model models/ds4flash.gguf
-```
-
-### 3. Keep Updated
-
-You can refresh your local toolboxes to the latest Docker Hub builds using the helper script:
-
-```sh
-./refresh-toolboxes.sh all
-```
+| `rocm-7.2.3` | ROCm 7.2.3 (stable) | Recommended for most users. |
+| `rocm7-nightlies` | ROCm 7 Nightly | Tracks latest AMD developer nightlies. |
 
 ---
 
 ## Host Configuration
 
-Strix Halo uses unified memory. Add these kernel/boot parameters to your GRUB configuration to enable unified memory and allocate up to 124 GiB for the iGPU:
+Strix Halo uses unified memory. Add these kernel boot parameters to allocate up to 124 GiB for the iGPU:
 
-`amd_iommu=off amdgpu.gttsize=126976 ttm.pages_limit=32505856`
+```
+amd_iommu=off amdgpu.gttsize=126976 ttm.pages_limit=32505856
+```
 
 Apply with:
 ```bash
@@ -102,14 +33,143 @@ sudo reboot
 
 ---
 
+## Quick Start
+
+### 1. Create and Enter the Toolbox
+
+**Ubuntu/Debian:** replace `toolbox` with `distrobox`.
+
+```sh
+toolbox create ds4-rocm-7.2.3 \
+  --image docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-7.2.3 \
+  -- --device /dev/dri --device /dev/kfd \
+  --group-add video --group-add render --group-add sudo --security-opt seccomp=unconfined
+
+toolbox enter ds4-rocm-7.2.3
+```
+
+### 2. Download Model Weights
+
+ds4 only works with its own DeepSeek V4 Flash GGUFs. The `download_model.sh` script is included in the toolbox:
+
+```sh
+download_model.sh q2-imatrix    # ~81 GB, recommended for 96/128 GB RAM
+# download_model.sh q4-imatrix  # ~153 GB, for >= 256 GB RAM
+```
+
+Models are saved to `./gguf/` and `./ds4flash.gguf` is symlinked to the download. See the [model repo](https://huggingface.co/antirez/deepseek-v4-gguf) for all available quants.
+
+### 3. Run Inference
+
+**Interactive chat (multi-turn, thinking mode by default):**
+```sh
+ds4 -m ds4flash.gguf --ctx 32768
+```
+Type at the `ds4>` prompt. `/nothink` for direct answers, `/help` for commands, Ctrl+C to interrupt generation.
+
+**One-shot prompt:**
+```sh
+ds4 -m ds4flash.gguf -p "Explain Redis streams in one paragraph." --nothink
+```
+
+### 4. Run the Server
+
+`ds4-server` exposes OpenAI and Anthropic-compatible HTTP endpoints. Inference is serialized through a single graph worker — concurrent requests queue, no batching.
+
+```sh
+ds4-server -m ds4flash.gguf --ctx 100000 \
+  --kv-disk-dir /tmp/ds4-kv --kv-disk-space-mb 8192
+```
+
+**Supported endpoints:**
+- `POST /v1/chat/completions` — OpenAI chat (streaming, tools, thinking)
+- `POST /v1/completions` — OpenAI completions
+- `POST /v1/messages` — Anthropic-compatible (Claude Code style clients)
+- `GET /v1/models`
+
+**Quick test:**
+```sh
+curl http://127.0.0.1:8000/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "model": "deepseek-v4-flash",
+    "messages": [{"role": "user", "content": "Hello!"}],
+    "stream": true
+  }'
+```
+
+### 5. Benchmarking
+
+`ds4-bench` measures prefill and generation throughput at context frontiers:
+
+```sh
+ds4-bench -m ds4flash.gguf \
+  --prompt-file prompt.txt \
+  --ctx-start 2048 \
+  --ctx-max 65536 \
+  --step-incr 2048 \
+  --gen-tokens 128
+```
+
+### 6. Keep Updated
+
+Refresh local toolboxes to the latest Docker Hub builds:
+
+```sh
+./refresh-toolboxes.sh all
+```
+
+---
+
+## Using with Coding Agents
+
+`ds4-server` can serve as the backend for local coding agents. Example **opencode** config (`~/.config/opencode/opencode.json`):
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "ds4": {
+      "name": "ds4.c (local)",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "http://127.0.0.1:8000/v1",
+        "apiKey": "dsv4-local"
+      },
+      "models": {
+        "deepseek-v4-flash": {
+          "name": "DeepSeek V4 Flash (ds4.c local)",
+          "limit": {
+            "context": 100000,
+            "output": 384000
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+With 128 GB RAM running q2 quants (~81 GB), a context of 100k–300k tokens is practical. Full 1M context uses ~26 GB extra.
+
+---
+
 ## Building Locally
 
-If you want to build the containers manually on your system:
-
 ```bash
-# Build ROCm 7.2.3 version
+# ROCm 7.2.3 (stable)
 docker build -t ds4-rocm-7.2.3 -f toolboxes/Dockerfile.rocm-7.2.3 toolboxes/
 
-# Build ROCm 7 Nightlies version
+# ROCm 7 Nightlies
 docker build -t ds4-rocm7-nightlies -f toolboxes/Dockerfile.rocm7-nightlies toolboxes/
 ```
+
+---
+
+## Stable Host Configuration
+
+| Component | Recommended |
+| :--- | :--- |
+| OS | Fedora 42/43, Ubuntu 24.04+ |
+| Kernel | 6.18.5+ |
+| Firmware | Avoid `linux-firmware-20251125` (breaks ROCm). Use `20260110`+. |

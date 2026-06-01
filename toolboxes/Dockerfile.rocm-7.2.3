@@ -54,12 +54,12 @@ RUN git clone -b release/rocm-rel-7.2 --single-branch --depth 1 \
 
 # ds4
 WORKDIR /opt/ds4
-ARG REPO=https://github.com/antirez/ds4.git
+ARG REPO=https://github.com/kyuz0/ds4.git
 ARG BRANCH=rocm
 RUN git clone -b ${BRANCH} --single-branch ${REPO} . \
   && git clean -xdf \
   && make rocm ROCM_ARCH=gfx1151 ROCM_PATH=/opt/rocm \
-  && cp ds4 ds4-server ds4-bench /usr/local/bin/
+  && cp ds4 ds4-server ds4-bench download_model.sh /usr/local/bin/
 
 # runtime stage
 FROM registry.fedoraproject.org/fedora-minimal:43

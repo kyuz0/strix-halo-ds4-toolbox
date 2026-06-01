@@ -63,7 +63,7 @@ RUN git clone -b ${BRANCH} --single-branch ${REPO} . \
   && git clean -xdf \
   && make rocm ROCM_ARCH=gfx1151 ROCM_PATH=/opt/rocm-7.0 \
      CFLAGS="-O3 -ffast-math -march=native -Wall -Wextra -std=c99 -D_GNU_SOURCE -fno-finite-math-only -fPIC" \
-  && cp ds4 ds4-server ds4-bench /usr/local/bin/
+  && cp ds4 ds4-server ds4-bench download_model.sh /usr/local/bin/
 
 # keep bin; drop headers/docs/static libs to keep image small
 RUN find /opt/rocm-7.0 -type f -name '*.a' -delete \
