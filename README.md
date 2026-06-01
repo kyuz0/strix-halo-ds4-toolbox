@@ -10,11 +10,11 @@ The containers compile the `rocm` branch of `antirez/ds4` and expose the three c
 
 Pre-built images on Docker Hub: **[kyuz0/strix-halo-ds4-toolbox](https://hub.docker.com/r/kyuz0/strix-halo-ds4-toolbox/tags)**
 
-| Tag | Stack | Notes |
-| :--- | :--- | :--- |
-| `rocm-7.2.4` | ROCm 7.2.4 (stable) | Tracks `antirez` upstream. Recommended for most users. |
-| `rocm-7.2.4-alantsev` | ROCm 7.2.4 (stable) | Tracks `alantsev` fork with newer features. |
-| `rocm-7.2.4-ejpir` | ROCm 7.2.4 (stable) | Experimental upstream-shape ROCm fork for high prefill performance on gfx1151. |
+| Tag | Repository | Stack | Notes |
+| :--- | :--- | :--- | :--- |
+| `rocm-7.2.4` | [antirez/ds4](https://github.com/antirez/ds4) | ROCm 7.2.4 (stable) | Tracks `antirez` upstream. Recommended for most users. |
+| `rocm-7.2.4-alantsev` | [alantsev/ds4](https://github.com/alantsev/ds4) | ROCm 7.2.4 (stable) | Tracks `alantsev` fork with newer features. |
+| `rocm-7.2.4-ejpir` | [ejpir/ds4-hip](https://github.com/ejpir/ds4-hip) | ROCm 7.2.4 (stable) | Experimental upstream-shape ROCm fork for high prefill performance on gfx1151. |
 
 ---
 
