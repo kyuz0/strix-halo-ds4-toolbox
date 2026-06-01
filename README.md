@@ -40,16 +40,16 @@ sudo reboot
 **Ubuntu/Debian:** replace `toolbox` with `distrobox`.
 
 **Available Images:**
-- `docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-7.2.3` (Tracks `antirez` upstream)
-- `docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-7.2.3-alantsev` (Tracks `alantsev` fork with newer features)
+- `docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-7.2.4` (Tracks `antirez` upstream)
+- `docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-7.2.4-alantsev` (Tracks `alantsev` fork with newer features)
 
 ```sh
-toolbox create ds4-rocm-7.2.3 \
-  --image docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-7.2.3 \
+toolbox create ds4-rocm-7.2.4 \
+  --image docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-7.2.4 \
   -- --device /dev/dri --device /dev/kfd \
   --group-add video --group-add render --group-add sudo --security-opt seccomp=unconfined
 
-toolbox enter ds4-rocm-7.2.3
+toolbox enter ds4-rocm-7.2.4
 ```
 
 ### 2. Download Model Weights

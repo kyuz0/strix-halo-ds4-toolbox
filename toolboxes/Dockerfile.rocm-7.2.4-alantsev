@@ -4,9 +4,9 @@ FROM registry.fedoraproject.org/fedora:43 AS builder
 # rocm 7.2.3 repo
 RUN <<'EOF'
 tee /etc/yum.repos.d/rocm.repo <<REPO
-[ROCm-7.2.3]
-name=ROCm7.2.3
-baseurl=https://repo.radeon.com/rocm/rhel10/7.2.3/main
+[ROCm-7.2.4]
+name=ROCm7.2.4
+baseurl=https://repo.radeon.com/rocm/rhel10/7.2.4/main
 enabled=1
 priority=50
 gpgcheck=1
@@ -54,7 +54,7 @@ RUN git clone -b release/rocm-rel-7.2 --single-branch --depth 1 \
 
 # ds4
 WORKDIR /opt/ds4
-ARG REPO=https://github.com/antirez/ds4.git
+ARG REPO=https://github.com/alantsev/ds4.git
 ARG BRANCH=rocm
 RUN git clone -b ${BRANCH} --single-branch ${REPO} . \
   && git clean -xdf \
@@ -67,9 +67,9 @@ FROM registry.fedoraproject.org/fedora-minimal:43
 # rocm 7.2.3 repo
 RUN <<'EOF'
 tee /etc/yum.repos.d/rocm.repo <<REPO
-[ROCm-7.2.3]
-name=ROCm7.2.3
-baseurl=https://repo.radeon.com/rocm/rhel10/7.2.3/main
+[ROCm-7.2.4]
+name=ROCm7.2.4
+baseurl=https://repo.radeon.com/rocm/rhel10/7.2.4/main
 enabled=1
 priority=50
 gpgcheck=1
