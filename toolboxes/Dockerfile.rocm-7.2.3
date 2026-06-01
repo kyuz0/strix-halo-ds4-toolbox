@@ -32,9 +32,24 @@ ENV ROCM_PATH=/opt/rocm \
   HIP_DEVICE_LIB_PATH=/opt/rocm/amdgcn/bitcode \
   PATH=/opt/rocm/bin:/opt/rocm/llvm/bin:$PATH
 
-# rocWMMA (header-only — place on default system include path for hipcc)
-RUN git clone -b release/rocm-rel-7.2 --single-branch --depth 1 https://github.com/ROCm/rocWMMA.git /tmp/rocWMMA \
-  && cp -r /tmp/rocWMMA/library/include/rocwmma /usr/include/rocwmma \
+# rocWMMA – cmake install (version header is generated, raw cp won't work)
+RUN git clone -b release/rocm-rel-7.2 --single-branch --depth 1 \
+      https://github.com/ROCm/rocWMMA.git /tmp/rocWMMA \
+  && cd /tmp/rocWMMA \
+  && CC=$ROCM_PATH/llvm/bin/amdclang \
+     CXX=$ROCM_PATH/llvm/bin/amdclang++ \
+     cmake -B build -S . -G Ninja \
+       -DCMAKE_BUILD_TYPE=Release \
+       -DCMAKE_INSTALL_PREFIX=$ROCM_PATH \
+       -DROCWMMA_BUILD_TESTS=OFF \
+       -DROCWMMA_BUILD_SAMPLES=OFF \
+       -DGPU_TARGETS="gfx1151" \
+       -DOpenMP_CXX_FLAGS="-fopenmp=libomp" \
+       -DOpenMP_C_FLAGS="-fopenmp=libomp" \
+       -DOpenMP_omp_LIBRARY="/usr/lib64/libomp.so" \
+       -DOpenMP_CXX_LIB_NAMES="omp" \
+       -DOpenMP_C_LIB_NAMES="omp" \
+  && cmake --install build \
   && rm -rf /tmp/rocWMMA
 
 # ds4
