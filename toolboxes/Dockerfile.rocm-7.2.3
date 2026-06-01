@@ -21,7 +21,7 @@ RUN dnf -y --nodocs --setopt=install_weak_deps=False \
   make gcc cmake lld clang clang-devel compiler-rt libcurl-devel ninja-build \
   rocm-llvm rocm-device-libs hip-runtime-amd hip-devel \
   rocblas rocblas-devel hipblas hipblas-devel rocm-cmake libomp-devel libomp \
-  rocminfo radeontop \
+  hipcub-devel rocminfo radeontop \
   git-core vim sudo rsync patch \
   && dnf clean all && rm -rf /var/cache/dnf/*
 
