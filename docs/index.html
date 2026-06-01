@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ds4 Backend Benchmarks</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+    <header>
+        <h1>AMD Ryzen AI Max "Strix Halo" — ds4 Benchmark Grid</h1>
+        <p>Comparing ds4 backends: upstream, alantsev, and ejpir (FAST_FULL) forks</p>
+        <p class="subtitle">Model: DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2.gguf</p>
+    </header>
+
+    <main>
+        <div class="controls">
+            <label>Toggle Toolboxes:</label>
+            <div id="legend-toggles" class="legend-toggles">
+                <!-- Checkboxes injected by JS -->
+            </div>
+        </div>
+
+        <div class="charts-container">
+            <div class="chart-box">
+                <h2>Prefill Throughput (Tokens/s)</h2>
+                <p>Prompt processing speed across expanding context lengths.</p>
+                <div class="canvas-wrapper">
+                    <canvas id="prefillChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="chart-box">
+                <h2>Generation Throughput (Tokens/s)</h2>
+                <p>Token generation speed across expanding context lengths.</p>
+                <div class="canvas-wrapper">
+                    <canvas id="genChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const COLORS = [
+            '#3b82f6', // blue
+            '#ef4444', // red
+            '#10b981', // green
+            '#f59e0b', // yellow
+            '#8b5cf6'  // purple
+        ];
+
+        let prefillChart, genChart;
+        let chartData = {};
+        
+        async function loadData() {
+            try {
+                const response = await fetch('results.json');
+                chartData = await response.json();
+                initUI();
+                renderCharts();
+            } catch (err) {
+                console.error("Failed to load results.json", err);
+                document.querySelector('.charts-container').innerHTML = 
+                    `<div class="error">Failed to load results.json. Have you run the benchmarks?</div>`;
+            }
+        }
+
+        function initUI() {
+            const container = document.getElementById('legend-toggles');
+            Object.keys(chartData).forEach((toolbox, idx) => {
+                const color = COLORS[idx % COLORS.length];
+                const label = document.createElement('label');
+                label.className = 'toggle-label';
+                label.style.borderLeft = `4px solid ${color}`;
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = true;
+                checkbox.value = toolbox;
+                checkbox.addEventListener('change', renderCharts);
+                
+                label.appendChild(checkbox);
+                label.appendChild(document.createTextNode(' ' + toolbox));
+                container.appendChild(label);
+            });
+        }
+
+        function getActiveToolboxes() {
+            return Array.from(document.querySelectorAll('#legend-toggles input:checked')).map(cb => cb.value);
+        }
+
+        function renderCharts() {
+            const activeToolboxes = getActiveToolboxes();
+            
+            // Extract common X-axis (context sizes) from the first active toolbox (or any)
+            let labels = [];
+            if (activeToolboxes.length > 0) {
+                labels = chartData[activeToolboxes[0]].map(d => d.ctx);
+            }
+
+            const prefillDatasets = activeToolboxes.map((tb, i) => {
+                const originalIndex = Object.keys(chartData).indexOf(tb);
+                return {
+                    label: tb,
+                    data: chartData[tb].map(d => d.prefill_tps),
+                    borderColor: COLORS[originalIndex % COLORS.length],
+                    backgroundColor: COLORS[originalIndex % COLORS.length],
+                    tension: 0.1
+                };
+            });
+
+            const genDatasets = activeToolboxes.map((tb, i) => {
+                const originalIndex = Object.keys(chartData).indexOf(tb);
+                return {
+                    label: tb,
+                    data: chartData[tb].map(d => d.gen_tps),
+                    borderColor: COLORS[originalIndex % COLORS.length],
+                    backgroundColor: COLORS[originalIndex % COLORS.length],
+                    tension: 0.1
+                };
+            });
+
+            const commonOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Context Size (Tokens)' }
+                    },
+                    y: {
+                        title: { display: true, text: 'Tokens / Sec' },
+                        beginAtZero: true
+                    }
+                }
+            };
+
+            if (prefillChart) prefillChart.destroy();
+            const ctxPrefill = document.getElementById('prefillChart').getContext('2d');
+            prefillChart = new Chart(ctxPrefill, {
+                type: 'line',
+                data: { labels, datasets: prefillDatasets },
+                options: commonOptions
+            });
+
+            if (genChart) genChart.destroy();
+            const ctxGen = document.getElementById('genChart').getContext('2d');
+            genChart = new Chart(ctxGen, {
+                type: 'line',
+                data: { labels, datasets: genDatasets },
+                options: commonOptions
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', loadData);
+    </script>
+</body>
+</html>
