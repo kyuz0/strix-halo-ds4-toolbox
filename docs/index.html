@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ds4 Backend Benchmarks</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/style.css?v=2">
 </head>
 <body>
     <header>
@@ -15,6 +15,16 @@
     </header>
 
     <main>
+        <div class="controls env-specs">
+            <h2 style="margin-top: 0; font-size: 1.25rem;">Environment Specifications</h2>
+            <ul style="margin-bottom: 0; padding-left: 1.5rem; line-height: 1.6; color: var(--text-muted);">
+                <li><strong>Repository:</strong> <a href="https://github.com/kyuz0/strix-halo-ds4-toolbox" target="_blank" style="color: var(--text-main); text-decoration: none; border-bottom: 1px solid var(--border);">kyuz0/strix-halo-ds4-toolbox</a></li>
+                <li><strong>Hardware:</strong> AMD Ryzen AI Max "Strix Halo"</li>
+                <li><strong>Memory:</strong> 128GB vRAM (Configured with Unified Memory)</li>
+                <li><strong>Software Stack:</strong> Fedora 43, Kernel 6.19.12-200.fc43.x86_64</li>
+                <li><strong>Model Quantization:</strong> <code style="background: var(--bg); padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em;">DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2.gguf</code></li>
+            </ul>
+        </div>
         <div class="controls">
             <label>Toggle Toolboxes:</label>
             <div id="legend-toggles" class="legend-toggles">
