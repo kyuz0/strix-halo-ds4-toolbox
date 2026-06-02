@@ -1,0 +1,63 @@
+ds4: GGUF tensor inventory: total=1328 tensors, 80.76 GiB described (file=80.76 GiB, tensor_data_offset=0.00 GiB)
+ds4: GGUF tensor types: f32=492/0.00 GiB, f16=359/2.04 GiB, q8_0=345/6.15 GiB, q2_k=43/28.22 GiB, iq2_xxs=86/44.34 GiB, i32=3/0.01 GiB
+ds4: GGUF tensor groups: routed_moe=129/72.56 GiB (gate=43/22.17 GiB, up=43/22.17 GiB, down=43/28.22 GiB), shared=129/1.07 GiB (gate=43/0.36 GiB, up=43/0.36 GiB, down=43/0.36 GiB), attention=701/5.40 GiB, indexer=84/0.08 GiB, emb_output=3/1.51 GiB, hc=132/0.03 GiB, other=150/0.10 GiB
+ds4: ROCm backend initialized on AMD Radeon 8060S Graphics (sm_115)
+ds4: ROCm fast paths: quality=off copy_model=on q8_prequant_decode=on q8_decode_rpb=1 q_head_rope_fused=on qkv_pair_decode=on oldhip_attention_decode=on oldhip_attention_vec4=on attn_out_low_splitk=off attn_out_low_prequant=on attn_out_low_rpb=32 shared_gate_up_fused_w32=off shared_gate_up_prequant_pair=on shared_gate_up_pair_swiglu=off overlap_shared_gate_up=on moe_decode_rpb=1 moe_q8k_gateup=on moe_q8k_down=on q8_fp16_preload(attn_out=on,attn_q_b=on,shared_down=on)
+ds4: ROCm optional paths: prefill_raw_fast=on prefill_mixed_fast=on indexed_heads32=on q8_batch_fast=on q8_wmma_fast=on moe_wmma_hot=on attn_q_b_cublas=on attn_output_cublas_all=on shared_down_cublas=on shared_gate_up_batch_fused=on
+ds4: ROCm memory before model placement: used=2.59 GiB free=121.41 GiB total=124.00 GiB placement=mapped/range_cache model_image=0.00 GiB range_cache=0.00 GiB q8_f16_cache=0.00 GiB q8_f32_cache=0.00 GiB scratch=0.00 GiB moe_dense_cache=0.00 GiB
+ds4: ROCm chunk-copying 80.76 GiB model image
+ds4: ROCm loading model tensors into device cache
+ds4: ROCm loading model tensors 16.06 GiB cached
+ds4: ROCm loading model tensors 32.06 GiB cached
+ds4: ROCm loading model tensors 48.06 GiB cached
+ds4: ROCm loading model tensors 64.06 GiB cached
+ds4: ROCm loading model tensors 80.06 GiB cached
+ds4: ROCm model chunk copy complete in 19.173s (80.76 GiB tensors)
+ds4: ROCm memory after model placement: used=83.64 GiB free=40.36 GiB total=124.00 GiB placement=device_copy model_image=80.76 GiB range_cache=0.00 GiB q8_f16_cache=0.00 GiB q8_f32_cache=0.00 GiB scratch=0.00 GiB moe_dense_cache=0.00 GiB
+ds4: CUDA requested Q8 fp16 preload tensors=172 original=4.64 GiB expanded=8.73 GiB in 0.593s
+ds4: CUDA Q8 fp16 preload groups: attn_out=86/2.86 GiB->5.38 GiB, attn_q_b=43/1.43 GiB->2.69 GiB, shared_down=43/0.36 GiB->0.67 GiB, shared_gate_up=0/0.00 GiB->0.00 GiB, other=0/0.00 GiB->0.00 GiB
+ds4: ROCm memory after Q8 fp16 preload: used=92.65 GiB free=31.35 GiB total=124.00 GiB placement=device_copy model_image=80.76 GiB range_cache=0.00 GiB q8_f16_cache=8.73 GiB q8_f32_cache=0.00 GiB scratch=0.25 GiB moe_dense_cache=0.00 GiB
+ds4: CUDA preparing model tensor mappings
+ds4: CUDA prepared model tensor mappings 16.37 GiB
+ds4: CUDA prepared model tensor mappings 32.07 GiB
+ds4: CUDA prepared model tensor mappings 48.43 GiB
+ds4: CUDA prepared model tensor mappings 64.13 GiB
+ds4: CUDA prepared model tensor mappings 80.24 GiB
+ds4: CUDA startup model preparation covered 80.76 GiB of tensor spans in 0.094s
+ds4: hip backend initialized for graph diagnostics
+ds4-bench: context buffers 1933.10 MiB (ctx=65665, backend=hip, prefill_chunk=2048, raw_kv_rows=2304, compressed_kv_rows=16418)
+ctx_tokens,prefill_tokens,prefill_tps,gen_tokens,gen_tps,kvcache_bytes
+ds4: CUDA known resident footprint: model_image=80.76 GiB q8_f16_cache=8.73 GiB context=1.89 GiB total_known=91.39 GiB
+ds4: ROCm memory after context buffers: used=98.65 GiB free=25.35 GiB total=124.00 GiB placement=device_copy model_image=80.76 GiB range_cache=0.00 GiB q8_f16_cache=10.58 GiB q8_f32_cache=0.00 GiB scratch=0.25 GiB moe_dense_cache=0.00 GiB
+2048,2048,211.55,128,13.81,52184460
+4096,2048,195.95,128,13.68,80373132
+6144,2048,197.63,128,13.64,108561804
+8192,2048,197.20,128,13.50,136750476
+10240,2048,195.60,128,13.44,164939148
+12288,2048,191.93,128,13.36,193127820
+14336,2048,195.26,128,13.32,221316492
+16384,2048,194.18,128,13.30,249505164
+18432,2048,193.73,128,13.24,277693836
+20480,2048,193.28,128,13.18,305882508
+22528,2048,192.27,128,13.13,334071180
+24576,2048,191.81,128,13.07,362259852
+26624,2048,191.00,128,13.02,390448524
+28672,2048,190.13,128,12.96,418637196
+30720,2048,189.78,128,12.91,446825868
+32768,2048,188.88,128,12.76,475014540
+34816,2048,184.75,128,12.67,503203212
+36864,2048,184.82,128,12.62,531391884
+38912,2048,184.58,128,12.57,559580556
+40960,2048,183.56,128,12.53,587769228
+43008,2048,183.29,128,12.49,615957900
+45056,2048,182.23,128,12.44,644146572
+47104,2048,181.85,128,12.40,672335244
+49152,2048,178.00,128,12.36,700523916
+51200,2048,179.89,128,12.32,728712588
+53248,2048,179.20,128,12.27,756901260
+55296,2048,179.04,128,12.23,785089932
+57344,2048,178.22,128,12.18,813278604
+59392,2048,174.02,128,12.14,841467276
+61440,2048,173.70,128,12.11,869655948
+63488,2048,173.26,128,12.06,897844620
+65536,2048,173.10,128,12.02,926033292
