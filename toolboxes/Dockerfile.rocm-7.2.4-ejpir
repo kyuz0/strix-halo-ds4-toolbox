@@ -74,6 +74,7 @@ RUN git clone -b ${BRANCH} --single-branch ${REPO} . \
   && sed -i 's|source "$ROOT_DIR/scripts/rocm_settings.sh"|source "/usr/local/bin/rocm_settings.sh"|g' /usr/local/bin/ds4-fast /usr/local/bin/ds4-server-fast /usr/local/bin/ds4-bench-fast \
   && sed -i '/if \[\[ ! -f "$MODEL" \]\]/,/fi/d' /usr/local/bin/ds4-fast /usr/local/bin/ds4-server-fast /usr/local/bin/ds4-bench-fast \
   && sed -i 's/cd "$ROOT_DIR"//g' /usr/local/bin/ds4-fast /usr/local/bin/ds4-server-fast /usr/local/bin/ds4-bench-fast \
+  && sed -i '/args=(/i for ((i=0; i<${#SERVER_EXTRA_ARGS[@]}; i++)); do case "${SERVER_EXTRA_ARGS[i]}" in -m|--model) MODEL="${SERVER_EXTRA_ARGS[i+1]}" ;; -c|--ctx) CTX="${SERVER_EXTRA_ARGS[i+1]}" ;; -n|--tokens) TOKENS="${SERVER_EXTRA_ARGS[i+1]}" ;; --host) HOST="${SERVER_EXTRA_ARGS[i+1]}" ;; --port) PORT="${SERVER_EXTRA_ARGS[i+1]}" ;; esac; done' /usr/local/bin/ds4-server-fast \
   && chmod +x /usr/local/bin/ds4-fast /usr/local/bin/ds4-server-fast /usr/local/bin/ds4-bench-fast
 
 # runtime stage
