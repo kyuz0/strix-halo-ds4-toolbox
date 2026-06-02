@@ -138,7 +138,7 @@ The image bundles optimized bash wrappers that automatically apply the `DS4_SERV
 
 Run the interactive CLI, benchmark, or server using the new `*-fast` wrapper scripts with the fast full preset by exporting `DS4_SERVER_FAST_FULL=1`:
 ```sh
-DS4_SERVER_FAST_FULL=1 ds4-server-fast -m ds4flash.gguf --ctx 131072
+DS4_SERVER_FAST_FULL=1 ds4-server-fast -m ds4flash.gguf --ctx 131072 -n 65536
 DS4_SERVER_FAST_FULL=1 ds4-bench-fast -m ds4flash.gguf --prompt-file prompt.txt --ctx-start 2048 --ctx-max 65536 --step-incr 2048 --gen-tokens 128
 ```
 
