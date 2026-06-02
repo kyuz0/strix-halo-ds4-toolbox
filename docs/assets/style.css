@@ -136,3 +136,46 @@ main {
     text-align: center;
     font-weight: 500;
 }
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.data-table th, .data-table td {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border);
+    text-align: right;
+}
+
+.data-table th:first-child, .data-table td:first-child {
+    text-align: left;
+    font-weight: 600;
+    background: #f8fafc;
+}
+
+.data-table thead th {
+    background: #f1f5f9;
+    font-weight: 600;
+}
+
+.data-table tbody tr:nth-child(even) {
+    background: #f8fafc;
+}
+
+.best-val {
+    background-color: #dcfce7 !important;
+    color: #166534;
+    font-weight: 600;
+}
+
+.pos-delta {
+    color: #16a34a;
+    font-weight: 600;
+}
+
+.neg-delta {
+    color: #dc2626;
+    font-weight: 600;
+}

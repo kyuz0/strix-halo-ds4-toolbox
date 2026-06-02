@@ -39,6 +39,12 @@
                 </div>
             </div>
         </div>
+
+        <div class="chart-box" style="margin-top: 2rem; overflow-x: auto;">
+            <h2>Raw Benchmark Data</h2>
+            <p>Detailed breakdown of tokens/s across selected toolboxes.</p>
+            <table id="dataTable" class="data-table"></table>
+        </div>
     </main>
 
     <script>
@@ -150,6 +156,90 @@
                 data: { labels, datasets: genDatasets },
                 options: commonOptions
             });
+
+            renderTable(activeToolboxes);
+        }
+
+        function renderTable(activeToolboxes) {
+            const tableContainer = document.getElementById('dataTable');
+            if (activeToolboxes.length === 0) {
+                tableContainer.innerHTML = '<tr><td>No backends selected.</td></tr>';
+                return;
+            }
+
+            // Extract context sizes
+            const ctxSizes = chartData[activeToolboxes[0]].map(d => d.ctx);
+
+            let html = '<thead><tr><th>Context Size</th>';
+            
+            // Header for active toolboxes
+            activeToolboxes.forEach(tb => {
+                html += `<th colspan="2">${tb}</th>`;
+            });
+            
+            // Delta headers if exactly 2 backends
+            const showDelta = activeToolboxes.length === 2;
+            if (showDelta) {
+                html += `<th colspan="2">Delta (${activeToolboxes[1]} vs ${activeToolboxes[0]})</th>`;
+            }
+            
+            html += '</tr><tr><th></th>';
+            activeToolboxes.forEach(tb => {
+                html += `<th>Prefill</th><th>Decode</th>`;
+            });
+            if (showDelta) {
+                html += `<th>Prefill Δ</th><th>Decode Δ</th>`;
+            }
+            html += '</tr></thead><tbody>';
+
+            ctxSizes.forEach((ctx) => {
+                html += `<tr><td>${ctx}</td>`;
+                
+                let prefillValues = [];
+                let genValues = [];
+                
+                activeToolboxes.forEach(tb => {
+                    const dataPoint = chartData[tb].find(d => d.ctx === ctx);
+                    const prefill = dataPoint ? dataPoint.prefill_tps : 0;
+                    const gen = dataPoint ? dataPoint.gen_tps : 0;
+                    prefillValues.push(prefill);
+                    genValues.push(gen);
+                });
+                
+                const bestPrefill = Math.max(...prefillValues);
+                const bestGen = Math.max(...genValues);
+                
+                activeToolboxes.forEach((tb, i) => {
+                    const pVal = prefillValues[i];
+                    const gVal = genValues[i];
+                    
+                    const highlight = activeToolboxes.length >= 2;
+                    const pClass = (highlight && pVal === bestPrefill && pVal > 0) ? 'class="best-val"' : '';
+                    const gClass = (highlight && gVal === bestGen && gVal > 0) ? 'class="best-val"' : '';
+                    
+                    html += `<td ${pClass}>${pVal.toFixed(2)}</td>`;
+                    html += `<td ${gClass}>${gVal.toFixed(2)}</td>`;
+                });
+                
+                if (showDelta) {
+                    const p0 = prefillValues[0], p1 = prefillValues[1];
+                    const g0 = genValues[0], g1 = genValues[1];
+                    
+                    const pDelta = p0 > 0 ? ((p1 - p0) / p0 * 100) : 0;
+                    const gDelta = g0 > 0 ? ((g1 - g0) / g0 * 100) : 0;
+                    
+                    const pColor = pDelta > 0 ? 'pos-delta' : (pDelta < 0 ? 'neg-delta' : '');
+                    const gColor = gDelta > 0 ? 'pos-delta' : (gDelta < 0 ? 'neg-delta' : '');
+                    
+                    html += `<td class="${pColor}">${pDelta > 0 ? '+' : ''}${pDelta.toFixed(1)}%</td>`;
+                    html += `<td class="${gColor}">${gDelta > 0 ? '+' : ''}${gDelta.toFixed(1)}%</td>`;
+                }
+                
+                html += '</tr>';
+            });
+            
+            html += '</tbody>';
+            tableContainer.innerHTML = html;
         }
 
         window.addEventListener('DOMContentLoaded', loadData);
