@@ -74,8 +74,6 @@ RUN git clone -b ${BRANCH} --single-branch ${REPO} . \
   && sed -i 's|source "$ROOT_DIR/scripts/rocm_settings.sh"|source "/usr/local/bin/rocm_settings.sh"|g' /usr/local/bin/ds4-fast /usr/local/bin/ds4-server-fast /usr/local/bin/ds4-bench-fast \
   && sed -i '/if \[\[ ! -f "$MODEL" \]\]/,/fi/d' /usr/local/bin/ds4-fast /usr/local/bin/ds4-server-fast /usr/local/bin/ds4-bench-fast \
   && sed -i 's/cd "$ROOT_DIR"//g' /usr/local/bin/ds4-fast /usr/local/bin/ds4-server-fast /usr/local/bin/ds4-bench-fast \
-  && sed -i '/--model "$MODEL"/d; /--ctx "$CTX"/d; /--tokens "$TOKENS"/d; /--host "$HOST"/d; /--port "$PORT"/d' /usr/local/bin/ds4-server-fast \
-  && sed -i '/echo "ds4-server: ctx=/d' /usr/local/bin/ds4-server-fast \
   && chmod +x /usr/local/bin/ds4-fast /usr/local/bin/ds4-server-fast /usr/local/bin/ds4-bench-fast
 
 # runtime stage
@@ -100,7 +98,7 @@ RUN microdnf -y --nodocs --setopt=install_weak_deps=0 \
   install \
   bash ca-certificates libatomic libstdc++ libgcc libgomp sudo \
   hip-runtime-amd hipblas hipblaslt \
-  rocminfo radeontop procps-ng \
+  rocminfo radeontop procps-ng iproute \
   && microdnf clean all && rm -rf /var/cache/dnf/*
 
 # copy
