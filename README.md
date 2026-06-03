@@ -173,6 +173,23 @@ DS4_SERVER_FAST_FULL=1 ds4-bench-fast -m ds4flash.gguf \
   --listen 192.168.100.2 8081
 ```
 
+### Speculative Decoding (MTP)
+
+DeepSeek V4 models feature a Multi-Token Predictor (MTP) that can be used for speculative decoding to accelerate generation speed. You need to download the MTP weights (e.g., `DeepSeek-V4-Flash-MTP-Q4K-Q8_0-F32.gguf`) in addition to your main model.
+
+To enable MTP, pass the `--mtp` flag pointing to the MTP GGUF file. You can also tune `--mtp-draft` (default 1) and `--mtp-margin` (default 3.0).
+
+```sh
+ds4-server -m ds4flash.gguf \
+  --mtp DeepSeek-V4-Flash-MTP-Q4K-Q8_0-F32.gguf \
+  --mtp-draft 1 \
+  --ctx 100000
+```
+
+> [!WARNING]
+> **MTP is currently incompatible with Distributed Inference.**
+> In a distributed setup where the worker handles the `output` layer, the worker returns only the final `logits` back to the coordinator over the network. MTP requires the final *hidden state* of the base model to operate, which remains stranded on the worker. Passing `--mtp` on the coordinator will currently fail to draft tokens.
+
 ### 6. Keep Updated
 
 Refresh local toolboxes to the latest Docker Hub builds:
