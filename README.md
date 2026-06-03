@@ -142,6 +142,37 @@ DS4_SERVER_FAST_FULL=1 ds4-server-fast -m ds4flash.gguf --ctx 131072 -n 65536
 DS4_SERVER_FAST_FULL=1 ds4-bench-fast -m ds4flash.gguf --prompt-file prompt.txt --ctx-start 2048 --ctx-max 65536 --step-incr 2048 --gen-tokens 128
 ```
 
+### Distributed Inference (Pipeline Parallelism)
+
+The ROCm fork supports distributing the model across multiple nodes using pipeline parallelism (layer slicing). You can specify exactly which layers evaluate on which machine, and designate one node as the `coordinator` and the others as `worker`s.
+
+For example, to split the model between two machines (Coordinator: `192.168.100.2`, Worker: `192.168.100.1`):
+
+**1. Start the Worker (evaluates layers 20 through output):**
+```sh
+DS4_SERVER_FAST_FULL=1 ds4-server-fast -m ds4flash.gguf \
+  --role worker --layers 20:output \
+  --coordinator 192.168.100.2 8081 --debug
+```
+
+**2. Start the Coordinator (evaluates layers 0 through 19):**
+```sh
+DS4_SERVER_FAST_FULL=1 ds4-server-fast -m ds4flash.gguf \
+  --ctx 100072 -n 36000 \
+  --role coordinator --layers 0:19 \
+  --listen 192.168.100.2 8081 --debug
+```
+
+**Distributed Benchmarking:**
+You can also use `ds4-bench-fast` as a coordinator to benchmark the entire cluster. First start the workers, then launch the benchmark:
+```sh
+DS4_SERVER_FAST_FULL=1 ds4-bench-fast -m ds4flash.gguf \
+  --prompt-file speed-bench/promessi_sposi.txt \
+  --ctx-start 2048 --ctx-max 65536 --step-incr 2048 --gen-tokens 128 \
+  --role coordinator --layers 0:19 \
+  --listen 192.168.100.2 8081
+```
+
 ### 6. Keep Updated
 
 Refresh local toolboxes to the latest Docker Hub builds:
