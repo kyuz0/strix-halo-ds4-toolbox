@@ -148,18 +148,18 @@ The ROCm fork supports distributing the model across multiple nodes using pipeli
 
 For example, to split the model between two machines (Coordinator: `192.168.100.2`, Worker: `192.168.100.1`):
 
-**1. Start the Worker (evaluates layers 20 through output):**
+**1. Start the Worker (evaluates layers 22 through output):**
 ```sh
 DS4_SERVER_FAST_FULL=1 ds4-server-fast -m ds4flash.gguf \
-  --role worker --layers 20:output \
+  --role worker --layers 22:output \
   --coordinator 192.168.100.2 8081 --debug
 ```
 
-**2. Start the Coordinator (evaluates layers 0 through 19):**
+**2. Start the Coordinator (evaluates layers 0 through 21):**
 ```sh
 DS4_SERVER_FAST_FULL=1 ds4-server-fast -m ds4flash.gguf \
   --ctx 100072 -n 36000 \
-  --role coordinator --layers 0:19 \
+  --role coordinator --layers 0:21 \
   --listen 192.168.100.2 8081 --debug
 ```
 
@@ -169,7 +169,7 @@ You can also use `ds4-bench-fast` as a coordinator to benchmark the entire clust
 DS4_SERVER_FAST_FULL=1 ds4-bench-fast -m ds4flash.gguf \
   --prompt-file speed-bench/promessi_sposi.txt \
   --ctx-start 2048 --ctx-max 65536 --step-incr 2048 --gen-tokens 128 \
-  --role coordinator --layers 0:19 \
+  --role coordinator --layers 0:21 \
   --listen 192.168.100.2 8081
 ```
 
