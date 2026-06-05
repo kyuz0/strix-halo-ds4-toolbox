@@ -84,7 +84,11 @@ RUN microdnf -y --nodocs --setopt=install_weak_deps=0 \
   bash ca-certificates libatomic libstdc++ libgcc libgomp sudo \
   hip-runtime-amd hipblas \
   rocminfo radeontop procps-ng \
+  python3-pip \
   && microdnf clean all && rm -rf /var/cache/dnf/*
+
+# hf CLI for model downloads (hf_xet enables HF_XET_HIGH_PERFORMANCE=1)
+RUN pip install --no-cache-dir 'huggingface_hub[hf_xet]'
 
 # copy
 COPY --from=builder /usr/local/ /usr/local/
@@ -93,5 +97,10 @@ COPY --from=builder /usr/local/ /usr/local/
 RUN echo "/usr/local/lib"  > /etc/ld.so.conf.d/local.conf \
   && echo "/usr/local/lib64" >> /etc/ld.so.conf.d/local.conf \
   && ldconfig
+
+# Toolbox/Distrobox shares the host home directory. Prevent the host's
+# ~/.local/lib/python* from shadowing container-installed packages
+# (e.g. hf CLI importing the host's broken huggingface_hub).
+ENV PYTHONNOUSERSITE=1
 
 CMD ["/bin/bash"]
