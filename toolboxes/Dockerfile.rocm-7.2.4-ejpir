@@ -108,7 +108,7 @@ RUN pip install --no-cache-dir 'huggingface_hub[hf_xet]'
 
 # copy
 COPY --from=builder /usr/local/ /usr/local/
-COPY check_drift.sh /opt/check_drift.sh
+COPY scripts/check_drift.sh /opt/check_drift.sh
 RUN chmod +x /opt/check_drift.sh
 
 # ld
