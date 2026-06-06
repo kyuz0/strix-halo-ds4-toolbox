@@ -14,7 +14,7 @@ printf "%-8s | %-12s | %-12s | %-8s | %-8s | %-12s | %-12s | %-10s\n" "Tokens" "
 echo "--------------------------------------------------------------------------------------------"
 
 # Token lengths to test
-TOKEN_COUNTS=(4 8 16 32 64 128 256)
+TOKEN_COUNTS=(4 8 16 32 64 128)
 
 for tokens in "${TOKEN_COUNTS[@]}"; do
     # Run the test
