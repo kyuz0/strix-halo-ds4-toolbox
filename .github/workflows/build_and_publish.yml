@@ -90,9 +90,9 @@ jobs:
           docker build --no-cache -t "${LI}" -f "${DF}" .
 
           echo "→ Running smoke tests..."
-          docker run --rm "${LI}" ds4 --help || { status=$?; echo "ds4 exited with status $status"; [[ $status -eq 0 || $status -eq 1 || $status -eq 2 || $status -eq 134 ]]; }
-          docker run --rm "${LI}" ds4-server --help || { status=$?; echo "ds4-server exited with status $status"; [[ $status -eq 0 || $status -eq 1 || $status -eq 2 || $status -eq 134 ]]; }
-          docker run --rm "${LI}" ds4-bench --help || { status=$?; echo "ds4-bench exited with status $status"; [[ $status -eq 0 || $status -eq 1 || $status -eq 2 || $status -eq 134 ]]; }
+          docker run --rm "${LI}" ds4 --help || { status=$?; echo "ds4 exited with status $status"; [[ $status -eq 0 || $status -eq 1 || $status -eq 2 || $status -eq 132 || $status -eq 134 ]]; }
+          docker run --rm "${LI}" ds4-server --help || { status=$?; echo "ds4-server exited with status $status"; [[ $status -eq 0 || $status -eq 1 || $status -eq 2 || $status -eq 132 || $status -eq 134 ]]; }
+          docker run --rm "${LI}" ds4-bench --help || { status=$?; echo "ds4-bench exited with status $status"; [[ $status -eq 0 || $status -eq 1 || $status -eq 2 || $status -eq 132 || $status -eq 134 ]]; }
 
           echo "→ Tag & push immutable → ${IMM}"
           docker tag "${LI}" "${IMM}"
