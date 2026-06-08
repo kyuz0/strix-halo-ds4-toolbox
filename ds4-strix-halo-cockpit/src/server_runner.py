@@ -27,6 +27,12 @@ def build_server_cmd(engine: str, image: str, model_path: str, ctx: int,
 
     cmd = [engine, "run", "--rm", "-it"]
     cmd.extend(engine_args)
+    
+    # ROCm requires host IPC sharing and ptrace capabilities to avoid HSA memory mapping errors
+    cmd.extend([
+        "--ipc=host",
+        "--cap-add=SYS_PTRACE"
+    ])
         
     if engine == "podman":
         cmd.extend([
