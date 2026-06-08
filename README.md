@@ -77,36 +77,6 @@ HF_XET_HIGH_PERFORMANCE=1 hf download antirez/deepseek-v4-gguf \
   --local-dir ~/ds4
 ```
 
-#### Single Node — Hybrid Q2/Q4 (Higher Quality)
-
-A hybrid model (~97 GB) that keeps later expert layers (37–42) at Q4 precision for better accuracy, while still fitting in 128 GB:
-
-```sh
-HF_XET_HIGH_PERFORMANCE=1 hf download antirez/deepseek-v4-gguf \
-  DeepSeek-V4-Flash-Layers37-42Q4KExperts-OtherExpertLayersIQ2XXSGateUp-Q2KDown-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix-fixed.gguf \
-  --local-dir ~/ds4
-```
-
-#### Dual Node (2× 128 GB RAM) — Q4
-
-The full Q4 imatrix model (~153.3 GB) requires two Strix Halo nodes via [distributed inference](#distributed-inference-pipeline-parallelism). Download it on **both** machines:
-
-```sh
-HF_XET_HIGH_PERFORMANCE=1 hf download antirez/deepseek-v4-gguf \
-  DeepSeek-V4-Flash-Q4KExperts-F16HC-F16Compressor-F16Indexer-Q8Attn-Q8Shared-Q8Out-chat-v2-imatrix.gguf \
-  --local-dir ~/ds4
-```
-
-#### MTP Speculative Decoding Weights (Optional)
-
-The MTP model (~3.6 GB) enables [speculative decoding](#speculative-decoding-mtp):
-
-```sh
-HF_XET_HIGH_PERFORMANCE=1 hf download antirez/deepseek-v4-gguf \
-  DeepSeek-V4-Flash-MTP-Q4K-Q8_0-F32.gguf \
-  --local-dir ~/ds4
-```
-
 ### 3. Run Inference
 
 **Interactive chat (multi-turn, thinking mode by default):**
@@ -172,57 +142,6 @@ ds4-bench -m ~/ds4/DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-i
   --step-incr 2048 \
   --gen-tokens 128
 ```
-
-### Distributed Inference (Pipeline Parallelism)
-
-The ROCm fork supports distributing the model across multiple nodes using pipeline parallelism (layer slicing). You can specify exactly which layers evaluate on which machine, and designate one node as the `coordinator` and the others as `worker`s.
-
-For example, to split the Q4 model between two machines (Coordinator: `192.168.100.2`, Worker: `192.168.100.1`):
-
-**1. Start the Worker (evaluates layers 22 through output):**
-```sh
-ds4-server \
-  -m ~/ds4/DeepSeek-V4-Flash-Q4KExperts-F16HC-F16Compressor-F16Indexer-Q8Attn-Q8Shared-Q8Out-chat-v2-imatrix.gguf \
-  --role worker --layers 22:output \
-  --coordinator 192.168.100.2 8081 --debug
-```
-
-**2. Start the Coordinator (evaluates layers 0 through 21):**
-```sh
-ds4-server \
-  -m ~/ds4/DeepSeek-V4-Flash-Q4KExperts-F16HC-F16Compressor-F16Indexer-Q8Attn-Q8Shared-Q8Out-chat-v2-imatrix.gguf \
-  --ctx 100072 -n 36000 \
-  --role coordinator --layers 0:21 \
-  --listen 192.168.100.2 8081 --debug
-```
-
-**Distributed Benchmarking:**
-You can also use `ds4-bench` as a coordinator to benchmark the entire cluster. First start the workers, then launch the benchmark:
-```sh
-ds4-bench \
-  -m ~/ds4/DeepSeek-V4-Flash-Q4KExperts-F16HC-F16Compressor-F16Indexer-Q8Attn-Q8Shared-Q8Out-chat-v2-imatrix.gguf \
-  --prompt-file speed-bench/promessi_sposi.txt \
-  --ctx-start 2048 --ctx-max 65536 --step-incr 2048 --gen-tokens 128 \
-  --role coordinator --layers 0:21 \
-  --listen 192.168.100.2 8081
-```
-
-### Speculative Decoding (MTP)
-
-DeepSeek V4 models feature a Multi-Token Predictor (MTP) that can be used for speculative decoding to accelerate generation speed. You need to download the MTP weights (e.g., `DeepSeek-V4-Flash-MTP-Q4K-Q8_0-F32.gguf`) in addition to your main model.
-
-To enable MTP, pass the `--mtp` flag pointing to the MTP GGUF file. You can also tune `--mtp-draft` (default 1) and `--mtp-margin` (default 3.0).
-
-```sh
-ds4-server -m ~/ds4/DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix.gguf \
-  --mtp ~/ds4/DeepSeek-V4-Flash-MTP-Q4K-Q8_0-F32.gguf \
-  --mtp-draft 1 \
-  --ctx 100000
-```
-
-> [!WARNING]
-> **MTP is currently incompatible with Distributed Inference.**
-> In a distributed setup where the worker handles the `output` layer, the worker returns only the final `logits` back to the coordinator over the network. MTP requires the final *hidden state* of the base model to operate, which remains stranded on the worker. Passing `--mtp` on the coordinator will currently fail to draft tokens.
 
 ### 6. Keep Updated
 
