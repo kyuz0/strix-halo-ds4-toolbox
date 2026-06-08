@@ -1,18 +1,11 @@
-# AMD Strix Halo ds4 Toolboxes
+# AMD Strix Halo ds4 Toolbox
 
-Pre-built containers ("toolboxes") for running **[ds4](https://github.com/antirez/ds4)** — antirez's DeepSeek V4 Flash inference engine — on **AMD Ryzen AI Max "Strix Halo"** integrated GPUs (`gfx1151`).
+A pre-built container image ("toolbox") for running **[ds4](https://github.com/antirez/ds4)** — antirez's DeepSeek V4 Flash inference engine — on **AMD Ryzen AI Max "Strix Halo"** integrated GPUs (`gfx1151`).
 
-The containers compile the `rocm` branch of `antirez/ds4` and expose the three compiled binaries: `ds4`, `ds4-server`, and `ds4-bench`. Toolbx is the standard developer container system on Fedora; Distrobox works on Ubuntu, Debian, Arch, openSUSE, etc.
+This container is based on the `rocm` branch of `antirez/ds4` compiled against **ROCm 7.2.4 (stable)**. It exposes three compiled binaries: `ds4`, `ds4-server`, and `ds4-bench`.
 
----
-
-## Supported Toolboxes
-
-Pre-built images on Docker Hub: **[kyuz0/strix-halo-ds4-toolbox](https://hub.docker.com/r/kyuz0/strix-halo-ds4-toolbox/tags)**
-
-| Tag | Repository | Stack | Notes |
-| :--- | :--- | :--- | :--- |
-| `rocm-7.2.4` | [antirez/ds4](https://github.com/antirez/ds4) | ROCm 7.2.4 (stable) | Tracks `antirez` upstream. Recommended for most users. |
+* **Docker Hub Image:** [kyuz0/strix-halo-ds4-toolbox:rocm-7.2.4](https://hub.docker.com/r/kyuz0/strix-halo-ds4-toolbox/tags)
+* **Target Container System:** Toolbx (standard developer container system on Fedora) or Distrobox (works on Ubuntu, Debian, Arch, openSUSE, etc.)
 
 ---
 
@@ -145,10 +138,10 @@ ds4-bench -m ~/ds4/DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-i
 
 ### 6. Keep Updated
 
-Refresh local toolboxes to the latest Docker Hub builds:
+Refresh the local toolbox to the latest Docker Hub build:
 
 ```sh
-./refresh-toolboxes.sh all
+./refresh-toolboxes.sh ds4-rocm-7.2.4
 ```
 
 ---
