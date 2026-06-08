@@ -1,0 +1,33 @@
+{
+  "repo": "antirez/deepseek-v4-gguf",
+  "models": [
+    {
+      "name": "IQ2_XXS imatrix (~80.8 GB) — Single Node Recommended",
+      "filename": "DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix.gguf",
+      "size_gb": 80.8,
+      "nodes": 1,
+      "recommended": true
+    },
+    {
+      "name": "Hybrid Q2/Q4 imatrix (~97 GB) — Higher Quality",
+      "filename": "DeepSeek-V4-Flash-Layers37-42Q4KExperts-OtherExpertLayersIQ2XXSGateUp-Q2KDown-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix-fixed.gguf",
+      "size_gb": 97.0,
+      "nodes": 1,
+      "recommended": false
+    },
+    {
+      "name": "Q4 imatrix (~153.3 GB) — Dual Node",
+      "filename": "DeepSeek-V4-Flash-Q4KExperts-F16HC-F16Compressor-F16Indexer-Q8Attn-Q8Shared-Q8Out-chat-v2-imatrix.gguf",
+      "size_gb": 153.3,
+      "nodes": 2,
+      "recommended": false
+    },
+    {
+      "name": "MTP Speculative Decoding Weights (~3.6 GB)",
+      "filename": "DeepSeek-V4-Flash-MTP-Q4K-Q8_0-F32.gguf",
+      "size_gb": 3.6,
+      "nodes": 1,
+      "recommended": false
+    }
+  ]
+}

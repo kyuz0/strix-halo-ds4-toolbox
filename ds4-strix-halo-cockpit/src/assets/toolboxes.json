@@ -1,0 +1,30 @@
+{
+  "registry": "docker.io/kyuz0/strix-halo-ds4-toolbox",
+  "groups": [
+    {
+      "name": "Official Toolboxes",
+      "toolboxes": [
+        {
+          "name": "ds4-rocm-7.2.4",
+          "tag": "rocm-7.2.4",
+          "description": "antirez upstream — Recommended for most users",
+          "engine_args": ["--device", "/dev/dri", "--device", "/dev/kfd",
+                          "--group-add", "video", "--group-add", "render",
+                          "--group-add", "sudo", "--security-opt", "seccomp=unconfined"],
+          "server_binary": "ds4-server",
+          "fast_mode": false
+        },
+        {
+          "name": "ds4-rocm-7.2.4-ejpir",
+          "tag": "rocm-7.2.4-ejpir",
+          "description": "ejpir fork — high prefill performance (~200 tok/s)",
+          "engine_args": ["--device", "/dev/dri", "--device", "/dev/kfd",
+                          "--group-add", "video", "--group-add", "render",
+                          "--group-add", "sudo", "--security-opt", "seccomp=unconfined"],
+          "server_binary": "ds4-server-fast",
+          "fast_mode": true
+        }
+      ]
+    }
+  ]
+}

@@ -13,7 +13,6 @@ Pre-built images on Docker Hub: **[kyuz0/strix-halo-ds4-toolbox](https://hub.doc
 | Tag | Repository | Stack | Notes |
 | :--- | :--- | :--- | :--- |
 | `rocm-7.2.4` | [antirez/ds4](https://github.com/antirez/ds4) | ROCm 7.2.4 (stable) | Tracks `antirez` upstream. Recommended for most users. |
-| `rocm-7.2.4-alantsev` | [alantsev/ds4](https://github.com/alantsev/ds4) | ROCm 7.2.4 (stable) | Tracks `alantsev` fork with newer features. |
 | `rocm-7.2.4-ejpir` | [ejpir/ds4-hip](https://github.com/ejpir/ds4-hip) | ROCm 7.2.4 (stable) | Experimental upstream-shape ROCm fork for high prefill performance on gfx1151. |
 
 ---
@@ -42,7 +41,6 @@ sudo reboot
 
 **Available Images:**
 - `docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-7.2.4` (Tracks `antirez` upstream)
-- `docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-7.2.4-alantsev` (Tracks `alantsev` fork with newer features)
 - `docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-7.2.4-ejpir` (Tracks `ejpir` experimental upstream-shape ROCm fork for high prefill performance on gfx1151)
 
 ```sh

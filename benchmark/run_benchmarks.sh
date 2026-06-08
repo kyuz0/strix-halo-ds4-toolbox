@@ -15,7 +15,6 @@ GEN_TOKENS=128
 
 TOOLBOXES=(
   "ds4-rocm-7.2.4"
-  "ds4-rocm-7.2.4-alantsev"
   "ds4-rocm-7.2.4-ejpir"
 )
 

@@ -20,7 +20,7 @@ RUN dnf -y --nodocs --setopt=install_weak_deps=False \
   install \
   make gcc cmake lld clang clang-devel compiler-rt libcurl-devel ninja-build \
   rocm-llvm rocm-device-libs hip-runtime-amd hip-devel \
-  rocblas rocblas-devel hipblas hipblas-devel rocm-cmake libomp-devel libomp \
+  rocblas rocblas-devel hipblas hipblas-devel hipblaslt hipblaslt-devel rocm-cmake libomp-devel libomp \
   hipcub-devel rocminfo radeontop \
   git-core vim sudo rsync patch \
   && dnf clean all && rm -rf /var/cache/dnf/*
@@ -82,7 +82,7 @@ RUN microdnf -y --nodocs --setopt=install_weak_deps=0 \
   --exclude='*sdk*' --exclude='*samples*' --exclude='*-doc*' --exclude='*-docs*' \
   install \
   bash ca-certificates libatomic libstdc++ libgcc libgomp sudo \
-  hip-runtime-amd hipblas \
+  hip-runtime-amd hipblas hipblaslt \
   rocminfo radeontop procps-ng \
   python3-pip \
   && microdnf clean all && rm -rf /var/cache/dnf/*
