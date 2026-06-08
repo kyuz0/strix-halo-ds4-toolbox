@@ -70,6 +70,16 @@ HF_XET_HIGH_PERFORMANCE=1 hf download antirez/deepseek-v4-gguf \
   --local-dir ~/ds4
 ```
 
+#### MTP Speculative Decoding Weights (Optional)
+
+The MTP model (~3.6 GB) enables [speculative decoding](#speculative-decoding-mtp):
+
+```sh
+HF_XET_HIGH_PERFORMANCE=1 hf download antirez/deepseek-v4-gguf \
+  DeepSeek-V4-Flash-MTP-Q4K-Q8_0-F32.gguf \
+  --local-dir ~/ds4
+```
+
 ### 3. Run Inference
 
 **Interactive chat (multi-turn, thinking mode by default):**
@@ -134,6 +144,19 @@ ds4-bench -m ~/ds4/DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-i
   --ctx-max 65536 \
   --step-incr 2048 \
   --gen-tokens 128
+```
+
+### Speculative Decoding (MTP)
+
+DeepSeek V4 models feature a Multi-Token Predictor (MTP) that can be used for speculative decoding to accelerate generation speed. You need to download the MTP weights (e.g., `DeepSeek-V4-Flash-MTP-Q4K-Q8_0-F32.gguf`) in addition to your main model.
+
+To enable MTP, pass the `--mtp` flag pointing to the MTP GGUF file. You can also tune `--mtp-draft` (default 1) and `--mtp-margin` (default 3.0).
+
+```sh
+ds4-server -m ~/ds4/DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix.gguf \
+  --mtp ~/ds4/DeepSeek-V4-Flash-MTP-Q4K-Q8_0-F32.gguf \
+  --mtp-draft 1 \
+  --ctx 100000
 ```
 
 ### 6. Keep Updated
