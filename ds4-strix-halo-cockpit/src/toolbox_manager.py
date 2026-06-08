@@ -98,7 +98,6 @@ def get_all_toolboxes() -> dict:
                 tb["description"] = desc
                 tb["group"] = group_name
                 tb["server_binary"] = ctb.get("server_binary", "ds4-server")
-                tb["fast_mode"] = ctb.get("fast_mode", False)
                 grouped_toolboxes[group_name].append(tb)
                 del installed_dict[name]
             else:
@@ -111,8 +110,7 @@ def get_all_toolboxes() -> dict:
                     "engine": engine,
                     "args": ctb.get("engine_args", []),
                     "group": group_name,
-                    "server_binary": ctb.get("server_binary", "ds4-server"),
-                    "fast_mode": ctb.get("fast_mode", False)
+                    "server_binary": ctb.get("server_binary", "ds4-server")
                 })
                 
     unsupported = []
@@ -121,7 +119,6 @@ def get_all_toolboxes() -> dict:
         tb["description"] = ""
         tb["group"] = "Unsupported / Legacy"
         tb["server_binary"] = "ds4-server"
-        tb["fast_mode"] = False
         if "created" not in tb:
             tb["created"] = ""
         unsupported.append(tb)

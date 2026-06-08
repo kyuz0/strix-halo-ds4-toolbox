@@ -77,8 +77,6 @@ class Ds4CockpitApp(App):
     #confirm_message, #select_title { text-align: center; text-style: bold; color: #8C9EFF; margin-bottom: 1; width: 100%; }
     #confirm_buttons, #select_buttons { align: center middle; height: auto; }
     #select_list { border: solid #536DFE; height: 1fr; min-height: 10; margin-bottom: 1; }
-    
-    #fast_mode_indicator { color: #fbc02d; text-style: bold; margin-top: 1; display: none; }
     """
 
     def compose(self) -> ComposeResult:
@@ -112,7 +110,6 @@ class Ds4CockpitApp(App):
                         SearchableSelect(prompt="Select Toolbox Image", id="sel_image"),
                         classes="inline-row"
                     ),
-                    Label("⚡ Fast mode enabled — using ds4-server-fast with full model copy", id="fast_mode_indicator"),
                     Horizontal(
                         Label("Model", classes="inline-label"),
                         SearchableSelect(prompt="Select Local Model", id="sel_model"),
@@ -258,21 +255,7 @@ class Ds4CockpitApp(App):
         if sorted_images:
             sel_image.value = sorted_images[0]
 
-    @on(SearchableSelect.Changed, "#sel_image")
-    def on_image_selected(self, event: SearchableSelect.Changed):
-        image = event.value
-        fast_mode = False
-        if hasattr(self, 'toolboxes_dict'):
-            for tb in self.toolboxes_dict.values():
-                if tb["image"] == image and tb.get("fast_mode"):
-                    fast_mode = True
-                    break
-        
-        indicator = self.query_one("#fast_mode_indicator", Label)
-        if fast_mode:
-            indicator.styles.display = "block"
-        else:
-            indicator.styles.display = "none"
+
 
     def refresh_models(self):
         models = scan_local_models()

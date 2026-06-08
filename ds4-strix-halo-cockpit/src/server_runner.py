@@ -9,7 +9,6 @@ def build_server_cmd(engine: str, image: str, model_path: str, ctx: int,
     models_dir = os.path.expanduser("~/ds4")
     engine_args = toolbox_config.get("args", [])
     server_binary = toolbox_config.get("server_binary", "ds4-server")
-    fast_mode = toolbox_config.get("fast_mode", False)
     
     # Clean up toolbox engine_args (remove sudo)
     clean_args = []
@@ -28,9 +27,6 @@ def build_server_cmd(engine: str, image: str, model_path: str, ctx: int,
 
     cmd = [engine, "run", "--rm", "-it"]
     cmd.extend(engine_args)
-    
-    if fast_mode:
-        cmd.extend(["-e", "DS4_SERVER_FAST_FULL=1"])
         
     if engine == "podman":
         cmd.extend([

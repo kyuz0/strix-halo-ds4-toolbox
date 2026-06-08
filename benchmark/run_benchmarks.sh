@@ -15,7 +15,6 @@ GEN_TOKENS=128
 
 TOOLBOXES=(
   "ds4-rocm-7.2.4"
-  "ds4-rocm-7.2.4-ejpir"
 )
 
 mkdir -p "$RESULTS_DIR"
@@ -37,11 +36,7 @@ for toolbox in "${TOOLBOXES[@]}"; do
   
   LOG_FILE="$RESULTS_DIR/${toolbox}.log"
   
-  if [[ "$toolbox" == *"ejpir"* ]]; then
-    CMD="DS4_SERVER_FAST_FULL=1 ds4-bench-fast"
-  else
-    CMD="ds4-bench"
-  fi
+  CMD="ds4-bench"
   
   echo "Executing: toolbox run --container $toolbox bash -c \"$CMD -m '$MODEL_PATH' --prompt-file '$PROMPT_PATH' --ctx-start $CTX_START --ctx-max $CTX_MAX --step-incr $STEP_INCR --gen-tokens $GEN_TOKENS\""
   

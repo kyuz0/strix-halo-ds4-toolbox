@@ -13,7 +13,6 @@ Pre-built images on Docker Hub: **[kyuz0/strix-halo-ds4-toolbox](https://hub.doc
 | Tag | Repository | Stack | Notes |
 | :--- | :--- | :--- | :--- |
 | `rocm-7.2.4` | [antirez/ds4](https://github.com/antirez/ds4) | ROCm 7.2.4 (stable) | Tracks `antirez` upstream. Recommended for most users. |
-| `rocm-7.2.4-ejpir` | [ejpir/ds4-hip](https://github.com/ejpir/ds4-hip) | ROCm 7.2.4 (stable) | Experimental upstream-shape ROCm fork for high prefill performance on gfx1151. |
 
 ---
 
@@ -41,7 +40,6 @@ sudo reboot
 
 **Available Images:**
 - `docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-7.2.4` (Tracks `antirez` upstream)
-- `docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-7.2.4-ejpir` (Tracks `ejpir` experimental upstream-shape ROCm fork for high prefill performance on gfx1151)
 
 ```sh
 toolbox create ds4-rocm-7.2.4 \
@@ -127,8 +125,7 @@ ds4 -m ~/ds4/DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix
 `ds4-server` exposes OpenAI and Anthropic-compatible HTTP endpoints. Inference is serialized through a single graph worker — concurrent requests queue, no batching.
 
 ```sh
-ds4-server -m ~/ds4/DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix.gguf \
-  --ctx 100000 --kv-disk-dir /tmp/ds4-kv --kv-disk-space-mb 8192
+ds4-server -m ~/ds4/DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix.gguf --ctx 124000 --kv-disk-dir /tmp/ds4-kv --kv-disk-space-mb 8192
 ```
 
 **Supported endpoints:**
@@ -162,30 +159,6 @@ ds4-bench -m ~/ds4/DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-i
   --gen-tokens 128
 ```
 
-### ejpir Fork (High Performance)
-
-The `rocm-7.2.4-ejpir` toolbox includes an experimental port by `@ejpir` that heavily optimizes the ROCm implementation towards upstream CUDA kernel shapes, specifically targeted at Strix Halo (`gfx1151`).
-
-**Fast Wrapper Scripts:**
-The image bundles optimized bash wrappers that automatically apply the `DS4_SERVER_FAST_FULL=1` environment variables needed for massive prefill speeds.
-
-| Standard Binary | Fast Wrapper Script | Description |
-| :--- | :--- | :--- |
-| `ds4` | `ds4-fast` | Interactive chat CLI |
-| `ds4-server` | `ds4-server-fast` | OpenAI-compatible server |
-| `ds4-bench` | `ds4-bench-fast` | Throughput benchmarking tool |
-
-**To achieve maximum prefill performance (~197–207 tok/s):**
-1. It relies on ROCm 7.2.3/7.2.4.
-2. It requires using full model copy rather than zero-copy.
-3. High throughput is mostly observed when batched prefill kernels are saturated with larger prompts (e.g., 2048-token chunks).
-
-Run the interactive CLI, benchmark, or server using the new `*-fast` wrapper scripts with the fast full preset by exporting `DS4_SERVER_FAST_FULL=1`:
-```sh
-DS4_SERVER_FAST_FULL=1 ds4-server-fast -m ~/ds4/DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix.gguf --ctx 131072 -n 65536
-DS4_SERVER_FAST_FULL=1 ds4-bench-fast -m ~/ds4/DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix.gguf --prompt-file prompt.txt --ctx-start 2048 --ctx-max 65536 --step-incr 2048 --gen-tokens 128
-```
-
 ### Distributed Inference (Pipeline Parallelism)
 
 The ROCm fork supports distributing the model across multiple nodes using pipeline parallelism (layer slicing). You can specify exactly which layers evaluate on which machine, and designate one node as the `coordinator` and the others as `worker`s.
@@ -194,7 +167,7 @@ For example, to split the Q4 model between two machines (Coordinator: `192.168.1
 
 **1. Start the Worker (evaluates layers 22 through output):**
 ```sh
-DS4_SERVER_FAST_FULL=1 ds4-server-fast \
+ds4-server \
   -m ~/ds4/DeepSeek-V4-Flash-Q4KExperts-F16HC-F16Compressor-F16Indexer-Q8Attn-Q8Shared-Q8Out-chat-v2-imatrix.gguf \
   --role worker --layers 22:output \
   --coordinator 192.168.100.2 8081 --debug
@@ -202,7 +175,7 @@ DS4_SERVER_FAST_FULL=1 ds4-server-fast \
 
 **2. Start the Coordinator (evaluates layers 0 through 21):**
 ```sh
-DS4_SERVER_FAST_FULL=1 ds4-server-fast \
+ds4-server \
   -m ~/ds4/DeepSeek-V4-Flash-Q4KExperts-F16HC-F16Compressor-F16Indexer-Q8Attn-Q8Shared-Q8Out-chat-v2-imatrix.gguf \
   --ctx 100072 -n 36000 \
   --role coordinator --layers 0:21 \
@@ -210,9 +183,9 @@ DS4_SERVER_FAST_FULL=1 ds4-server-fast \
 ```
 
 **Distributed Benchmarking:**
-You can also use `ds4-bench-fast` as a coordinator to benchmark the entire cluster. First start the workers, then launch the benchmark:
+You can also use `ds4-bench` as a coordinator to benchmark the entire cluster. First start the workers, then launch the benchmark:
 ```sh
-DS4_SERVER_FAST_FULL=1 ds4-bench-fast \
+ds4-bench \
   -m ~/ds4/DeepSeek-V4-Flash-Q4KExperts-F16HC-F16Compressor-F16Indexer-Q8Attn-Q8Shared-Q8Out-chat-v2-imatrix.gguf \
   --prompt-file speed-bench/promessi_sposi.txt \
   --ctx-start 2048 --ctx-max 65536 --step-incr 2048 --gen-tokens 128 \
