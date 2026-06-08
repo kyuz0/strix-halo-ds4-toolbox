@@ -124,9 +124,21 @@ ds4 -m ~/ds4/DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix
 
 `ds4-server` exposes OpenAI and Anthropic-compatible HTTP endpoints. Inference is serialized through a single graph worker — concurrent requests queue, no batching.
 
+**Using Toolbox/Distrobox (from inside the container):**
 ```sh
 ds4-server -m ~/ds4/DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix.gguf --ctx 124000 --kv-disk-dir /tmp/ds4-kv --kv-disk-space-mb 8192
 ```
+
+**Using standard Docker/Podman:**
+```sh
+docker run --rm -it -p 8000:8000 \
+  --device /dev/kfd --device /dev/dri \
+  --group-add video --group-add render --security-opt seccomp=unconfined \
+  -v ~/ds4:/models \
+  kyuz0/strix-halo-ds4-toolbox:rocm-7.2.4 \
+  ds4-server -m /models/DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix.gguf --ctx 124000 --kv-disk-dir /tmp/ds4-kv --kv-disk-space-mb 8192
+```
+*(Note: You can replace `docker` with `podman` depending on your container engine)*
 
 **Supported endpoints:**
 - `POST /v1/chat/completions` — OpenAI chat (streaming, tools, thinking)
