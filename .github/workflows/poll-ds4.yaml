@@ -20,7 +20,7 @@ jobs:
         run: |
           set -euo pipefail
           REPO_URL="https://github.com/antirez/ds4.git"
-          TARGET_REF="rocm"
+          TARGET_REF="main"
           echo "📌 Target branch: ${TARGET_REF}"
           LATEST_SHA=$(git ls-remote "$REPO_URL" "refs/heads/${TARGET_REF}" | cut -f1)
           if [[ -z "$LATEST_SHA" ]]; then echo "❌ No SHA found"; exit 1; fi

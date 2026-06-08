@@ -2,7 +2,7 @@
 
 A pre-built container image ("toolbox") for running **[ds4](https://github.com/antirez/ds4)** — antirez's DeepSeek V4 Flash inference engine — on **AMD Ryzen AI Max "Strix Halo"** integrated GPUs (`gfx1151`).
 
-This container is based on the `rocm` branch of `antirez/ds4` compiled against **ROCm 7.2.4 (stable)**. It exposes three compiled binaries: `ds4`, `ds4-server`, and `ds4-bench`.
+This container is based on the `main` branch of `antirez/ds4` compiled against **ROCm 7.2.4 (stable)**. It exposes three compiled binaries: `ds4`, `ds4-server`, and `ds4-bench`.
 
 * **Docker Hub Image:** [kyuz0/strix-halo-ds4-toolbox:rocm-7.2.4](https://hub.docker.com/r/kyuz0/strix-halo-ds4-toolbox/tags)
 * **Target Container System:** Toolbx (standard developer container system on Fedora) or Distrobox (works on Ubuntu, Debian, Arch, openSUSE, etc.)
@@ -14,7 +14,7 @@ This container is based on the `rocm` branch of `antirez/ds4` compiled against *
 Strix Halo uses unified memory. Add these kernel boot parameters to allocate up to 124 GiB for the iGPU:
 
 ```
-amd_iommu=off amdgpu.gttsize=126976 ttm.pages_limit=32505856
+amd_iommu=off amdgpu.gttsize=126976 ttm.pages_limit=32505856 ttm.page_pool_size=32505856
 ```
 
 Apply with:

@@ -55,7 +55,7 @@ RUN git clone -b release/rocm-rel-7.2 --single-branch --depth 1 \
 # ds4
 WORKDIR /opt/ds4
 ARG REPO=https://github.com/antirez/ds4.git
-ARG BRANCH=rocm
+ARG BRANCH=main
 RUN git clone -b ${BRANCH} --single-branch ${REPO} . \
   && git clean -xdf \
   && make rocm ROCM_ARCH=gfx1151 ROCM_PATH=/opt/rocm \
