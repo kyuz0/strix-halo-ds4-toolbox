@@ -70,6 +70,16 @@ HF_XET_HIGH_PERFORMANCE=1 hf download antirez/deepseek-v4-gguf \
   --local-dir ~/ds4
 ```
 
+#### Single Node — Hybrid Q2/Q4 (Higher Quality)
+
+A hybrid model (~97 GB) that keeps later expert layers (37–42) at Q4 precision for better accuracy. It fits in 128 GB but leaves less room for context. Best suited for a **dedicated inference node** running a headless Linux distro (e.g. Fedora Server minimal) rather than a full desktop environment — you'll want every GB for the model and KV cache at `--ctx 120000`.
+
+```sh
+HF_XET_HIGH_PERFORMANCE=1 hf download antirez/deepseek-v4-gguf \
+  DeepSeek-V4-Flash-Layers37-42Q4KExperts-OtherExpertLayersIQ2XXSGateUp-Q2KDown-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix-fixed.gguf \
+  --local-dir ~/ds4
+```
+
 #### MTP Speculative Decoding Weights (Optional)
 
 The MTP model (~3.6 GB) enables [speculative decoding](#speculative-decoding-mtp):
