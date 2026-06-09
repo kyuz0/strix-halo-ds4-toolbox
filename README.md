@@ -132,6 +132,23 @@ curl http://127.0.0.1:8000/v1/chat/completions \
   }'
 ```
 
+### KV Cache Disk Offloading
+
+The `--kv-disk-dir` and `--kv-disk-space-mb` flags in the server examples above are **optional**. The server runs fine without them. When enabled, ds4 checkpoints the KV cache to disk as `<sha1>.kv` files keyed by the rendered prompt prefix. antirez calls this treating the KV cache as a **"first-class disk citizen"**.
+
+**Why enable it:**
+- **Prefix reuse** — coding agents resend the same system prompt every request. Disk caching skips re-prefill on matching prefixes, restoring from SSD instead of recomputing thousands of tokens.
+- **Session persistence** — KV state survives server restarts and reboots.
+- **Extend context beyond RAM** — inactive context parks on SSD, letting you use larger `--ctx` values than pure RAM would allow.
+
+**Why skip it:** less SSD wear, simpler setup. Fine for one-off interactive use where you don't repeat prompts.
+
+> [!IMPORTANT]
+> **Strongly recommended for coding agents.** Without `--kv-disk-dir`, every request from Claude Code / opencode / Aider pays the full prefill cost. With it, only the first request is slow.
+
+> [!NOTE]
+> `/tmp` is cleared on reboot. For persistent checkpoints across reboots, use `~/.cache/ds4-kv` instead.
+
 ### 5. Benchmarking
 
 `ds4-bench` measures prefill and generation throughput at context frontiers.
