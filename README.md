@@ -245,3 +245,4 @@ docker build -t ds4-rocm-7.2.4 -f toolboxes/Dockerfile.rocm-7.2.4 toolboxes/
 | OS | Fedora 42/43, Ubuntu 24.04+ |
 | Kernel | 6.18.5+ |
 | Firmware | Avoid `linux-firmware-20251125` (breaks ROCm). Use `20260110`+. |
+
