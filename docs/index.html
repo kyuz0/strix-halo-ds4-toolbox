@@ -11,7 +11,7 @@
     <header>
         <h1>AMD Ryzen AI Max "Strix Halo" — ds4 Benchmark Grid</h1>
         <p>ds4 upstream ROCm performance</p>
-        <p class="subtitle">Model: DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2.gguf</p>
+        <p class="subtitle">Comparing quantizations on ds4 ROCm backend</p>
     </header>
 
     <main>
@@ -22,11 +22,11 @@
                 <li><strong>Hardware:</strong> AMD Ryzen AI Max "Strix Halo"</li>
                 <li><strong>Memory:</strong> 128GB vRAM (Configured with Unified Memory)</li>
                 <li><strong>Software Stack:</strong> Fedora 43, Kernel 6.19.12-200.fc43.x86_64</li>
-                <li><strong>Model Quantization:</strong> <code style="background: var(--bg); padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em;">DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2.gguf</code></li>
+                <li><strong>Models:</strong> Multiple quants compared</li>
             </ul>
         </div>
         <div class="controls">
-            <label>Toggle Toolboxes:</label>
+            <label>Toggle Models:</label>
             <div id="legend-toggles" class="legend-toggles">
                 <!-- Checkboxes injected by JS -->
             </div>
@@ -52,7 +52,7 @@
 
         <div class="chart-box" style="margin-top: 2rem; overflow-x: auto;">
             <h2>Raw Benchmark Data</h2>
-            <p>Detailed breakdown of tokens/s across selected toolboxes.</p>
+            <p>Detailed breakdown of tokens/s across selected models.</p>
             <table id="dataTable" class="data-table"></table>
         </div>
     </main>
@@ -84,7 +84,7 @@
 
         function initUI() {
             const container = document.getElementById('legend-toggles');
-            Object.keys(chartData).forEach((toolbox, idx) => {
+            Object.keys(chartData).forEach((modelName, idx) => {
                 const color = COLORS[idx % COLORS.length];
                 const label = document.createElement('label');
                 label.className = 'toggle-label';
@@ -93,29 +93,29 @@
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.checked = true;
-                checkbox.value = toolbox;
+                checkbox.value = modelName;
                 checkbox.addEventListener('change', renderCharts);
                 
                 label.appendChild(checkbox);
-                label.appendChild(document.createTextNode(' ' + toolbox));
+                label.appendChild(document.createTextNode(' ' + modelName));
                 container.appendChild(label);
             });
         }
 
-        function getActiveToolboxes() {
+        function getActiveModels() {
             return Array.from(document.querySelectorAll('#legend-toggles input:checked')).map(cb => cb.value);
         }
 
         function renderCharts() {
-            const activeToolboxes = getActiveToolboxes();
+            const activeModels = getActiveModels();
             
-            // Extract common X-axis (context sizes) from the first active toolbox (or any)
+            // Extract common X-axis (context sizes) from the first active model (or any)
             let labels = [];
-            if (activeToolboxes.length > 0) {
-                labels = chartData[activeToolboxes[0]].map(d => d.ctx);
+            if (activeModels.length > 0) {
+                labels = chartData[activeModels[0]].map(d => d.ctx);
             }
 
-            const prefillDatasets = activeToolboxes.map((tb, i) => {
+            const prefillDatasets = activeModels.map((tb, i) => {
                 const originalIndex = Object.keys(chartData).indexOf(tb);
                 return {
                     label: tb,
@@ -126,7 +126,7 @@
                 };
             });
 
-            const genDatasets = activeToolboxes.map((tb, i) => {
+            const genDatasets = activeModels.map((tb, i) => {
                 const originalIndex = Object.keys(chartData).indexOf(tb);
                 return {
                     label: tb,
@@ -167,34 +167,34 @@
                 options: commonOptions
             });
 
-            renderTable(activeToolboxes);
+            renderTable(activeModels);
         }
 
-        function renderTable(activeToolboxes) {
+        function renderTable(activeModels) {
             const tableContainer = document.getElementById('dataTable');
-            if (activeToolboxes.length === 0) {
-                tableContainer.innerHTML = '<tr><td>No backends selected.</td></tr>';
+            if (activeModels.length === 0) {
+                tableContainer.innerHTML = '<tr><td>No models selected.</td></tr>';
                 return;
             }
 
             // Extract context sizes
-            const ctxSizes = chartData[activeToolboxes[0]].map(d => d.ctx);
+            const ctxSizes = chartData[activeModels[0]].map(d => d.ctx);
 
             let html = '<thead><tr><th>Context Size</th>';
             
-            // Header for active toolboxes
-            activeToolboxes.forEach(tb => {
+            // Header for active models
+            activeModels.forEach(tb => {
                 html += `<th colspan="2">${tb}</th>`;
             });
             
-            // Delta headers if exactly 2 backends
-            const showDelta = activeToolboxes.length === 2;
+            // Delta headers if exactly 2 models
+            const showDelta = activeModels.length === 2;
             if (showDelta) {
-                html += `<th colspan="2">Delta (${activeToolboxes[1]} vs ${activeToolboxes[0]})</th>`;
+                html += `<th colspan="2">Delta (${activeModels[1]} vs ${activeModels[0]})</th>`;
             }
             
             html += '</tr><tr><th></th>';
-            activeToolboxes.forEach(tb => {
+            activeModels.forEach(tb => {
                 html += `<th>Prefill</th><th>Decode</th>`;
             });
             if (showDelta) {
@@ -208,7 +208,7 @@
                 let prefillValues = [];
                 let genValues = [];
                 
-                activeToolboxes.forEach(tb => {
+                activeModels.forEach(tb => {
                     const dataPoint = chartData[tb].find(d => d.ctx === ctx);
                     const prefill = dataPoint ? dataPoint.prefill_tps : 0;
                     const gen = dataPoint ? dataPoint.gen_tps : 0;
@@ -219,11 +219,11 @@
                 const bestPrefill = Math.max(...prefillValues);
                 const bestGen = Math.max(...genValues);
                 
-                activeToolboxes.forEach((tb, i) => {
+                activeModels.forEach((tb, i) => {
                     const pVal = prefillValues[i];
                     const gVal = genValues[i];
                     
-                    const highlight = activeToolboxes.length >= 2;
+                    const highlight = activeModels.length >= 2;
                     const pClass = (highlight && pVal === bestPrefill && pVal > 0) ? 'class="best-val"' : '';
                     const gClass = (highlight && gVal === bestGen && gVal > 0) ? 'class="best-val"' : '';
                     
