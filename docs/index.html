@@ -71,7 +71,7 @@
         
         async function loadData() {
             try {
-                const response = await fetch('results.json');
+                const response = await fetch('results.json?v=' + new Date().getTime());
                 chartData = await response.json();
                 initUI();
                 renderCharts();
@@ -80,6 +80,14 @@
                 document.querySelector('.charts-container').innerHTML = 
                     `<div class="error">Failed to load results.json. Have you run the benchmarks?</div>`;
             }
+        }
+
+        function formatModelName(name) {
+            // Shorten the huge GGUF names for the UI
+            let short = name.replace('DeepSeek-V4-Flash-', '');
+            short = short.replace('-chat-v2-imatrix-fixed.gguf', '');
+            short = short.replace('-chat-v2-imatrix.gguf', '');
+            return short.length > 30 ? short.substring(0, 30) + '...' : short;
         }
 
         function initUI() {
@@ -97,7 +105,7 @@
                 checkbox.addEventListener('change', renderCharts);
                 
                 label.appendChild(checkbox);
-                label.appendChild(document.createTextNode(' ' + modelName));
+                label.appendChild(document.createTextNode(' ' + formatModelName(modelName)));
                 container.appendChild(label);
             });
         }
@@ -118,7 +126,7 @@
             const prefillDatasets = activeModels.map((tb, i) => {
                 const originalIndex = Object.keys(chartData).indexOf(tb);
                 return {
-                    label: tb,
+                    label: formatModelName(tb),
                     data: chartData[tb].map(d => d.prefill_tps),
                     borderColor: COLORS[originalIndex % COLORS.length],
                     backgroundColor: COLORS[originalIndex % COLORS.length],
@@ -129,7 +137,7 @@
             const genDatasets = activeModels.map((tb, i) => {
                 const originalIndex = Object.keys(chartData).indexOf(tb);
                 return {
-                    label: tb,
+                    label: formatModelName(tb),
                     data: chartData[tb].map(d => d.gen_tps),
                     borderColor: COLORS[originalIndex % COLORS.length],
                     backgroundColor: COLORS[originalIndex % COLORS.length],
@@ -184,13 +192,13 @@
             
             // Header for active models
             activeModels.forEach(tb => {
-                html += `<th colspan="2">${tb}</th>`;
+                html += `<th colspan="2" title="${tb}">${formatModelName(tb)}</th>`;
             });
             
             // Delta headers if exactly 2 models
             const showDelta = activeModels.length === 2;
             if (showDelta) {
-                html += `<th colspan="2">Delta (${activeModels[1]} vs ${activeModels[0]})</th>`;
+                html += `<th colspan="2">Delta</th>`;
             }
             
             html += '</tr><tr><th></th>';
