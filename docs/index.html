@@ -87,7 +87,7 @@
             let short = name.replace('DeepSeek-V4-Flash-', '');
             short = short.replace('-chat-v2-imatrix-fixed.gguf', '');
             short = short.replace('-chat-v2-imatrix.gguf', '');
-            return short.length > 30 ? short.substring(0, 30) + '...' : short;
+            return short;
         }
 
         function initUI() {
