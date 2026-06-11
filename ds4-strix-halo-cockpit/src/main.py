@@ -16,7 +16,7 @@ import pyfiglet
 import importlib.metadata
 
 def generate_banner() -> str:
-    ascii_art = pyfiglet.figlet_format("ds4 Cockpit", font="small")
+    ascii_art = pyfiglet.figlet_format("ds4 Cockpit", font="slant")
     try:
         version = importlib.metadata.version("ds4-cockpit")
         version_str = f"v{version}"
