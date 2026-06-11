@@ -188,6 +188,7 @@ class Ds4CockpitApp(App):
         self.selected_toolboxes = set()
         self.refresh_toolboxes()
         self.refresh_models()
+        self.check_app_updates()
         
         engines = detect_engines()
         sel_engine = self.query_one("#sel_engine", SearchableSelect)
@@ -208,6 +209,33 @@ class Ds4CockpitApp(App):
         sel_role = self.query_one("#sel_role", SearchableSelect)
         sel_role.set_options([("Standalone", "Standalone"), ("Coordinator", "Coordinator"), ("Worker", "Worker")])
         sel_role.value = "Standalone"
+
+    @work(thread=True)
+    def check_app_updates(self):
+        import urllib.request
+        import json
+        import importlib.metadata
+        try:
+            current_version = importlib.metadata.version("ds4-cockpit")
+            req = urllib.request.Request("https://api.github.com/repos/kyuz0/strix-halo-ds4-toolbox/tags")
+            req.add_header('User-Agent', 'ds4-Cockpit-Update-Checker')
+            with urllib.request.urlopen(req, timeout=3) as response:
+                data = json.loads(response.read().decode())
+                if data:
+                    # Filter for cockpit tags
+                    cockpit_tags = [tag['name'] for tag in data if tag['name'].startswith('cockpit-v')]
+                    if cockpit_tags:
+                        latest_tag = cockpit_tags[0]
+                        latest_version = latest_tag.replace('cockpit-v', '')
+                        
+                        curr_parts = tuple(int(x) for x in current_version.split('.') if x.isdigit())
+                        latest_parts = tuple(int(x) for x in latest_version.split('.') if x.isdigit())
+                        
+                        if latest_parts > curr_parts:
+                            msg = f"Update available: v{latest_version} (Current: v{current_version}).\nRun `pipx upgrade ds4-cockpit` to update."
+                            self.app.call_from_thread(self.notify, msg, title="Cockpit Update Available", severity="information", timeout=15)
+        except Exception:
+            pass
 
     def refresh_toolboxes(self):
         self._mounting_tables = True
