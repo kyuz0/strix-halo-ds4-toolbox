@@ -27,17 +27,17 @@ def build_server_cmd(engine: str, image: str, model_path: str, ctx: int,
         clean_args.append(engine_args[i])
     engine_args = clean_args
 
-    cmd = [engine, "run", "--rm", "-it"]
-    cmd.extend(engine_args)
+    docker_args = [engine, "run", "--rm", "-it"]
+    docker_args.extend(engine_args)
     
     # ROCm requires host IPC sharing and ptrace capabilities to avoid HSA memory mapping errors
-    cmd.extend([
+    docker_args.extend([
         "--ipc=host",
         "--cap-add=SYS_PTRACE"
     ])
         
     if engine == "podman":
-        cmd.extend([
+        docker_args.extend([
             "--security-opt", "label=disable",
             "--userns=keep-id"
         ])
@@ -47,35 +47,34 @@ def build_server_cmd(engine: str, image: str, model_path: str, ctx: int,
         bind_ip = "127.0.0.1" if host == "localhost" else host
         port_mapping = f"{bind_ip}:{port}:{port}"
 
-    cmd.extend([
+    docker_args.extend([
         "-v", f"{models_dir}:/models:ro",
-        "-p", port_mapping,
-        image
+        "-p", port_mapping
     ])
     
     # Calculate relative paths for /models
     rel_path = os.path.relpath(model_path, models_dir)
     inner_model_path = f"/models/{rel_path}"
 
-    cmd.extend([
+    server_args = [
         server_binary,
         "-m", inner_model_path,
         "--ctx", str(ctx),
         "--host", "0.0.0.0",
         "--port", str(port)
-    ])
+    ]
     
     if kv_disk_dir:
-        cmd.extend(["--kv-disk-dir", kv_disk_dir, "--kv-disk-space-mb", str(kv_disk_mb)])
+        server_args.extend(["--kv-disk-dir", kv_disk_dir, "--kv-disk-space-mb", str(kv_disk_mb)])
         
     if mtp_path:
         mtp_rel = os.path.relpath(mtp_path, models_dir)
-        cmd.extend(["--mtp", f"/models/{mtp_rel}"])
+        server_args.extend(["--mtp", f"/models/{mtp_rel}"])
         
     if role and role != "Standalone":
-        cmd.extend(["--role", role.lower()])
+        server_args.extend(["--role", role.lower()])
         if layers:
-            cmd.extend(["--layers", layers])
+            server_args.extend(["--layers", layers])
         if peer_addr:
             if ":" in peer_addr and len(peer_addr.split()) == 1:
                 addr_parts = peer_addr.split(":")
@@ -85,14 +84,17 @@ def build_server_cmd(engine: str, image: str, model_path: str, ctx: int,
             if len(addr_parts) == 1:
                 addr_parts.append("8081")
                 
+            coord_ip = addr_parts[0]
+            coord_port = addr_parts[1]
+                
             if role.lower() == "coordinator":
-                cmd.extend(["--listen"])
-                cmd.extend(addr_parts[:2])
+                server_args.extend(["--listen", "0.0.0.0", coord_port])
+                bind_ip = "0.0.0.0" if coord_ip == "0.0.0.0" else coord_ip
+                docker_args.extend(["-p", f"{bind_ip}:{coord_port}:{coord_port}"])
             elif role.lower() == "worker":
-                cmd.extend(["--coordinator"])
-                cmd.extend(addr_parts[:2])
+                server_args.extend(["--coordinator", coord_ip, coord_port])
 
     if custom_args:
-        cmd.extend(shlex.split(custom_args))
+        server_args.extend(shlex.split(custom_args))
     
-    return cmd
+    return docker_args + [image] + server_args
