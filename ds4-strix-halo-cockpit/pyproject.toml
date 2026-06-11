@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ds4-cockpit"
-version = "2026.6.11.1619"
+version = "2026.6.11.1623"
 description = "A TUI for managing ds4 Strix Halo toolbox containers and DeepSeek V4 models."
 authors = [{name = "kyuz0"}]
 requires-python = ">=3.10"
