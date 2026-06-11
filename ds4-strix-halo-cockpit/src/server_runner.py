@@ -1,12 +1,14 @@
 import os
 import shlex
+from src.model_manager import get_models_dir
 
 def build_server_cmd(engine: str, image: str, model_path: str, ctx: int, 
                      host: str, port: str, kv_disk_dir: str, kv_disk_mb: int,
                      mtp_path: str, custom_args: str,
+                     role: str, layers: str, peer_addr: str,
                      toolbox_config: dict) -> list[str]:
     
-    models_dir = os.path.expanduser("~/ds4")
+    models_dir = str(get_models_dir())
     engine_args = toolbox_config.get("args", [])
     server_binary = toolbox_config.get("server_binary", "ds4-server")
     
@@ -70,6 +72,19 @@ def build_server_cmd(engine: str, image: str, model_path: str, ctx: int,
         mtp_rel = os.path.relpath(mtp_path, models_dir)
         cmd.extend(["--mtp", f"/models/{mtp_rel}"])
         
+    if role and role != "Standalone":
+        cmd.extend(["--role", role.lower()])
+        if layers:
+            cmd.extend(["--layers", layers])
+        if peer_addr:
+            addr_parts = peer_addr.split()
+            if role.lower() == "coordinator":
+                cmd.extend(["--listen"])
+                cmd.extend(addr_parts)
+            elif role.lower() == "worker":
+                cmd.extend(["--coordinator"])
+                cmd.extend(addr_parts)
+
     if custom_args:
         cmd.extend(shlex.split(custom_args))
     

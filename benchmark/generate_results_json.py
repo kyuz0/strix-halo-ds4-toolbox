@@ -15,12 +15,14 @@ def parse_log(filepath):
         with open(filepath, 'r') as f:
             content = f.read()
             
-        runs = content.split('ds4-bench -m')
+        runs = re.split(r'ds4-bench\s+-m', content)
         for run in runs[1:]: # skip preamble
             m = re.search(r'([^/\s]+\.gguf)', run)
             if not m:
                 continue
             model_name = m.group(1)
+            if '--role coordinator' in run:
+                model_name = model_name.replace('.gguf', '-distributed.gguf')
             
             # Find the CSV block
             csv_match = re.search(r'ctx_tokens,prefill_tokens,prefill_tps,gen_tokens,gen_tps,kvcache_bytes\n(.*)', run, re.DOTALL)

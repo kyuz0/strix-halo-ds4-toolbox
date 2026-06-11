@@ -132,6 +132,12 @@ class Ds4CockpitApp(App):
                         classes="inline-row"
                     ),
                     Horizontal(
+                        Horizontal(Label("Role", classes="inline-label"), SearchableSelect(prompt="Standalone", id="sel_role"), classes="short-field"),
+                        Horizontal(Label("Layers", classes="inline-label"), Input(placeholder="0:21 or 22:output", id="inp_layers", value=""), classes="short-field"),
+                        Horizontal(Label("Peer Addr", classes="inline-label"), Input(placeholder="IP Port", id="inp_peer_addr", value=""), classes="short-field"),
+                        classes="inline-row"
+                    ),
+                    Horizontal(
                         Label("Extra Args", classes="inline-label"),
                         Input(placeholder="e.g. --mtp-draft 1", id="inp_custom_args", value=""),
                         classes="inline-row"
@@ -198,6 +204,10 @@ class Ds4CockpitApp(App):
             rec = "⭐ " if m.get("recommended") else ""
             opts.append((f"{rec}{m['name']} ({m['size_gb']}GB)", m["filename"]))
         sel_dl.set_options(opts)
+
+        sel_role = self.query_one("#sel_role", SearchableSelect)
+        sel_role.set_options([("Standalone", "Standalone"), ("Coordinator", "Coordinator"), ("Worker", "Worker")])
+        sel_role.value = "Standalone"
 
     def refresh_toolboxes(self):
         self._mounting_tables = True
@@ -477,6 +487,9 @@ class Ds4CockpitApp(App):
         kv_dir = self.query_one("#inp_kv_dir", Input).value
         kv_mb = self.query_one("#inp_kv_mb", Input).value
         mtp_model = self.query_one("#sel_mtp_model", SearchableSelect).value
+        role = self.query_one("#sel_role", SearchableSelect).value
+        layers = self.query_one("#inp_layers", Input).value
+        peer_addr = self.query_one("#inp_peer_addr", Input).value
         custom_args = self.query_one("#inp_custom_args", Input).value
 
         if engine and image and model_path and ctx.isdigit():
@@ -492,6 +505,7 @@ class Ds4CockpitApp(App):
             cmd = build_server_cmd(
                 engine, image, model_path, int(ctx), 
                 host, port, kv_dir, kv_mb_val, mtp_model, custom_args,
+                role, layers, peer_addr,
                 tb_config
             )
             with self.suspend():

@@ -12,6 +12,15 @@
                           "--group-add", "video", "--group-add", "render",
                           "--group-add", "sudo", "--security-opt", "seccomp=unconfined"],
           "server_binary": "ds4-server"
+        },
+        {
+          "name": "ds4-multi-node-rocm-7.2.4",
+          "tag": "multi-node-rocm-7.2.4",
+          "description": "Multi-node distributed inference support",
+          "engine_args": ["--device", "/dev/dri", "--device", "/dev/kfd",
+                          "--group-add", "video", "--group-add", "render",
+                          "--group-add", "sudo", "--security-opt", "seccomp=unconfined"],
+          "server_binary": "ds4-server"
         }
       ]
     }

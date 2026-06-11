@@ -87,6 +87,9 @@
             let short = name.replace('DeepSeek-V4-Flash-', '');
             short = short.replace('-chat-v2-imatrix-fixed.gguf', '');
             short = short.replace('-chat-v2-imatrix.gguf', '');
+            if (short.endsWith('-distributed.gguf')) {
+                short = short.replace('-distributed.gguf', '') + ' (Distributed)';
+            }
             return short;
         }
 
@@ -117,20 +120,27 @@
         function renderCharts() {
             const activeModels = getActiveModels();
             
-            // Extract common X-axis (context sizes) from the first active model (or any)
-            let labels = [];
-            if (activeModels.length > 0) {
-                labels = chartData[activeModels[0]].map(d => d.ctx);
-            }
+            // Extract sorted context sizes from the union of all active models
+            let allCtxs = new Set();
+            activeModels.forEach(tb => {
+                if (chartData[tb]) {
+                    chartData[tb].forEach(d => allCtxs.add(d.ctx));
+                }
+            });
+            const labels = Array.from(allCtxs).sort((a, b) => a - b);
 
             const prefillDatasets = activeModels.map((tb, i) => {
                 const originalIndex = Object.keys(chartData).indexOf(tb);
                 return {
                     label: formatModelName(tb),
-                    data: chartData[tb].map(d => d.prefill_tps),
+                    data: labels.map(ctx => {
+                        const dp = chartData[tb]?.find(d => d.ctx === ctx);
+                        return dp ? dp.prefill_tps : null;
+                    }),
                     borderColor: COLORS[originalIndex % COLORS.length],
                     backgroundColor: COLORS[originalIndex % COLORS.length],
-                    tension: 0.1
+                    tension: 0.1,
+                    spanGaps: false
                 };
             });
 
@@ -138,10 +148,14 @@
                 const originalIndex = Object.keys(chartData).indexOf(tb);
                 return {
                     label: formatModelName(tb),
-                    data: chartData[tb].map(d => d.gen_tps),
+                    data: labels.map(ctx => {
+                        const dp = chartData[tb]?.find(d => d.ctx === ctx);
+                        return dp ? dp.gen_tps : null;
+                    }),
                     borderColor: COLORS[originalIndex % COLORS.length],
                     backgroundColor: COLORS[originalIndex % COLORS.length],
-                    tension: 0.1
+                    tension: 0.1,
+                    spanGaps: false
                 };
             });
 
@@ -185,8 +199,14 @@
                 return;
             }
 
-            // Extract context sizes
-            const ctxSizes = chartData[activeModels[0]].map(d => d.ctx);
+            // Extract sorted context sizes from the union of all active models
+            let allCtxs = new Set();
+            activeModels.forEach(tb => {
+                if (chartData[tb]) {
+                    chartData[tb].forEach(d => allCtxs.add(d.ctx));
+                }
+            });
+            const ctxSizes = Array.from(allCtxs).sort((a, b) => a - b);
 
             let html = '<thead><tr><th>Context Size</th>';
             
@@ -217,7 +237,7 @@
                 let genValues = [];
                 
                 activeModels.forEach(tb => {
-                    const dataPoint = chartData[tb].find(d => d.ctx === ctx);
+                    const dataPoint = chartData[tb]?.find(d => d.ctx === ctx);
                     const prefill = dataPoint ? dataPoint.prefill_tps : 0;
                     const gen = dataPoint ? dataPoint.gen_tps : 0;
                     prefillValues.push(prefill);
@@ -235,22 +255,22 @@
                     const pClass = (highlight && pVal === bestPrefill && pVal > 0) ? 'class="best-val"' : '';
                     const gClass = (highlight && gVal === bestGen && gVal > 0) ? 'class="best-val"' : '';
                     
-                    html += `<td ${pClass}>${pVal.toFixed(2)}</td>`;
-                    html += `<td ${gClass}>${gVal.toFixed(2)}</td>`;
+                    html += `<td ${pClass}>${pVal > 0 ? pVal.toFixed(2) : '—'}</td>`;
+                    html += `<td ${gClass}>${gVal > 0 ? gVal.toFixed(2) : '—'}</td>`;
                 });
                 
                 if (showDelta) {
                     const p0 = prefillValues[0], p1 = prefillValues[1];
                     const g0 = genValues[0], g1 = genValues[1];
                     
-                    const pDelta = p0 > 0 ? ((p1 - p0) / p0 * 100) : 0;
-                    const gDelta = g0 > 0 ? ((g1 - g0) / g0 * 100) : 0;
+                    const pDelta = p0 > 0 && p1 > 0 ? ((p1 - p0) / p0 * 100) : 0;
+                    const gDelta = g0 > 0 && g1 > 0 ? ((g1 - g0) / g0 * 100) : 0;
                     
                     const pColor = pDelta > 0 ? 'pos-delta' : (pDelta < 0 ? 'neg-delta' : '');
                     const gColor = gDelta > 0 ? 'pos-delta' : (gDelta < 0 ? 'neg-delta' : '');
                     
-                    html += `<td class="${pColor}">${pDelta > 0 ? '+' : ''}${pDelta.toFixed(1)}%</td>`;
-                    html += `<td class="${gColor}">${gDelta > 0 ? '+' : ''}${gDelta.toFixed(1)}%</td>`;
+                    html += `<td class="${pColor}">${p0 > 0 && p1 > 0 ? (pDelta > 0 ? '+' : '') + pDelta.toFixed(1) + '%' : '—'}</td>`;
+                    html += `<td class="${gColor}">${g0 > 0 && g1 > 0 ? (gDelta > 0 ? '+' : '') + gDelta.toFixed(1) + '%' : '—'}</td>`;
                 }
                 
                 html += '</tr>';
