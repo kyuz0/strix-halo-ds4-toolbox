@@ -27,6 +27,15 @@ sudo reboot
 
 ## Quick Start
 
+### 0. (Optional) Install the ds4 Cockpit TUI
+
+For an interactive, terminal-based UI to manage toolboxes, download models, and run servers:
+
+```sh
+pipx install "git+https://github.com/kyuz0/strix-halo-ds4-toolbox.git#subdirectory=ds4-strix-halo-cockpit"
+ds4-cockpit
+```
+
 ### 1. Create and Enter the Toolbox
 
 **Ubuntu/Debian:** replace `toolbox` with `distrobox`.

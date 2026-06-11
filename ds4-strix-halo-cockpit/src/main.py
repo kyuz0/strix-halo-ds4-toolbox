@@ -116,7 +116,7 @@ class Ds4CockpitApp(App):
                         classes="inline-row"
                     ),
                     Horizontal(
-                        Horizontal(Label("Context", classes="inline-label"), Input(placeholder="32768", id="inp_ctx", value="32768"), classes="short-field"),
+                        Horizontal(Label("Context", classes="inline-label"), Input(placeholder="126000", id="inp_ctx", value="126000"), classes="short-field"),
                         Horizontal(Label("Host", classes="inline-label"), Input(placeholder="localhost", id="inp_host", value="localhost"), classes="short-field"),
                         Horizontal(Label("Port", classes="inline-label"), Input(placeholder="8000", id="inp_port", value="8000"), classes="short-field"),
                         classes="inline-row"
@@ -133,8 +133,8 @@ class Ds4CockpitApp(App):
                     ),
                     Horizontal(
                         Horizontal(Label("Role", classes="inline-label"), SearchableSelect(prompt="Standalone", id="sel_role"), classes="short-field"),
-                        Horizontal(Label("Layers", classes="inline-label"), Input(placeholder="0:21 or 22:output", id="inp_layers", value=""), classes="short-field"),
-                        Horizontal(Label("Peer Addr", classes="inline-label"), Input(placeholder="IP Port", id="inp_peer_addr", value=""), classes="short-field"),
+                        Horizontal(Label("Layers", classes="inline-label"), Input(placeholder="e.g. 0:21", id="inp_layers", value=""), classes="short-field"),
+                        Horizontal(Label("Address", classes="inline-label"), Input(placeholder="IP Port", id="inp_peer_addr", value=""), classes="short-field"),
                         classes="inline-row"
                     ),
                     Horizontal(
@@ -260,7 +260,7 @@ class Ds4CockpitApp(App):
             images.add(tb["image"])
                     
         sel_image = self.query_one("#sel_image", SearchableSelect)
-        sorted_images = sorted(list(images))
+        sorted_images = sorted(list(images), key=lambda x: (1 if "multi-node" in x else 0, x))
         sel_image.set_options([(img, img) for img in sorted_images])
         if sorted_images:
             sel_image.value = sorted_images[0]
@@ -303,6 +303,43 @@ class Ds4CockpitApp(App):
                 dt.update_cell_at((cursor_row, 0), "\\[x]")
         except Exception:
             pass
+
+    @on(SearchableSelect.Changed, "#sel_role")
+    def on_role_changed(self, event: SearchableSelect.Changed) -> None:
+        role = event.value
+        inp_ctx = self.query_one("#inp_ctx", Input)
+        inp_layers = self.query_one("#inp_layers", Input)
+        inp_peer = self.query_one("#inp_peer_addr", Input)
+        
+        if role == "Coordinator":
+            inp_ctx.value = "262144"
+            inp_layers.value = "0:21"
+            inp_peer.placeholder = "Listen IP Port (e.g. 0.0.0.0 8081)"
+        elif role == "Worker":
+            inp_ctx.value = "262144"
+            inp_layers.value = "22:output"
+            inp_peer.placeholder = "Coord IP Port (e.g. 192.168.1.1 8081)"
+        else:
+            inp_ctx.value = "126000"
+            inp_layers.value = ""
+            inp_peer.placeholder = "IP Port"
+            
+    @on(SearchableSelect.Changed, "#sel_mtp_model")
+    def on_mtp_changed(self, event: SearchableSelect.Changed) -> None:
+        custom_args = self.query_one("#inp_custom_args", Input)
+        args_list = custom_args.value.split()
+        if event.value and event.value != "None":
+            if "--mtp-draft" not in args_list:
+                args_list.extend(["--mtp-draft", "1"])
+        else:
+            if "--mtp-draft" in args_list:
+                idx = args_list.index("--mtp-draft")
+                # Remove --mtp-draft and its value if it exists
+                if idx + 1 < len(args_list) and not args_list[idx+1].startswith("-"):
+                    del args_list[idx:idx+2]
+                else:
+                    del args_list[idx]
+        custom_args.value = " ".join(args_list)
 
     @on(events.MouseUp)
     def on_mouse_up(self, event: events.MouseUp):
