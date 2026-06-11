@@ -196,6 +196,47 @@ Refresh the local toolbox to the latest Docker Hub build:
 
 ---
 
+## Distributed Inference (Pipeline Parallelism)
+
+The ROCm fork supports distributing the model across multiple nodes using pipeline parallelism (layer slicing). You can specify exactly which layers evaluate on which machine, designating one node as the `coordinator` and the others as `worker`s.
+
+To run multi-node inference, you must use the `multi-node-rocm-7.2.4` container image (`ds4-multi-node-rocm-7.2.4` local toolbox), which contains the necessary patches for distributed networking and coordination.
+
+### 1. Start the Worker (evaluates layers 22 through output)
+Run the server on the worker node. Set the context size (e.g. `--ctx 262144` for 256k) and point it to the coordinator's IP and port:
+```sh
+ds4-server \
+  -m /mnt/storage/ds4/DeepSeek-V4-Flash-Q4KExperts-F16HC-F16Compressor-F16Indexer-Q8Attn-Q8Shared-Q8Out-chat-v2-imatrix.gguf \
+  --role worker --layers 22:output \
+  --coordinator 192.168.100.2 8081 \
+  --ctx 262144
+```
+
+### 2. Start the Coordinator (evaluates layers 0 through 21)
+Run the server on the coordinator node. Set the same context size (`--ctx 262144`), specify the MTP draft weights, roles, layer slicing, and listen on the coordinator's IP/port:
+```sh
+ds4-server \
+  -m ~/ds4/DeepSeek-V4-Flash-Q4KExperts-F16HC-F16Compressor-F16Indexer-Q8Attn-Q8Shared-Q8Out-chat-v2-imatrix.gguf \
+  --ctx 262144 \
+  --mtp ~/ds4/DeepSeek-V4-Flash-MTP-Q4K-Q8_0-F32.gguf \
+  --mtp-draft 1 \
+  --role coordinator --layers 0:21 \
+  --listen 192.168.100.2 8081
+```
+
+### 3. Run Benchmarks from the Coordinator
+To run throughput benchmarks across the cluster, first ensure all workers are running. Then, launch `ds4-bench` as the coordinator:
+```sh
+ds4-bench \
+  -m ~/ds4/DeepSeek-V4-Flash-Q4KExperts-F16HC-F16Compressor-F16Indexer-Q8Attn-Q8Shared-Q8Out-chat-v2-imatrix.gguf \
+  --prompt-file ~/ds4/ds4/speed-bench/promessi_sposi.txt \
+  --ctx-start 2048 --ctx-max 65536 --step-incr 2048 --gen-tokens 128 \
+  --role coordinator --layers 0:21 \
+  --listen 192.168.100.2 8081
+```
+
+---
+
 ## Using with Coding Agents
 
 `ds4-server` can serve as the backend for local coding agents. Example **opencode** config (`~/.config/opencode/opencode.json`):
