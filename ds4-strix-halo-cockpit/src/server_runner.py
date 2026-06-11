@@ -77,13 +77,20 @@ def build_server_cmd(engine: str, image: str, model_path: str, ctx: int,
         if layers:
             cmd.extend(["--layers", layers])
         if peer_addr:
-            addr_parts = peer_addr.split()
+            if ":" in peer_addr and len(peer_addr.split()) == 1:
+                addr_parts = peer_addr.split(":")
+            else:
+                addr_parts = peer_addr.split()
+                
+            if len(addr_parts) == 1:
+                addr_parts.append("8081")
+                
             if role.lower() == "coordinator":
                 cmd.extend(["--listen"])
-                cmd.extend(addr_parts)
+                cmd.extend(addr_parts[:2])
             elif role.lower() == "worker":
                 cmd.extend(["--coordinator"])
-                cmd.extend(addr_parts)
+                cmd.extend(addr_parts[:2])
 
     if custom_args:
         cmd.extend(shlex.split(custom_args))
