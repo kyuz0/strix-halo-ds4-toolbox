@@ -9,6 +9,12 @@ This container is based on the `main` branch of `antirez/ds4` compiled against *
 
 ---
 
+## 📺 Video Demo
+
+[![Watch the YouTube Video](https://i.ytimg.com/vi/Cfl3TS7ME5s/maxresdefault.jpg)](https://youtu.be/Cfl3TS7ME5s)
+
+---
+
 ## Host Configuration
 
 Strix Halo uses unified memory. Add these kernel boot parameters to allocate up to 124 GiB for the iGPU:
