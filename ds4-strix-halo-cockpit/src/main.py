@@ -463,8 +463,10 @@ class Ds4CockpitApp(App):
             if remote_date:
                 remote_date_str = remote_date[:10]
                 self.app.call_from_thread(self._update_toolbox_cell, tb['name'], 5, remote_date_str)
-                created_date = self._get_toolbox_cell(tb['name'], 4)
-                if created_date and remote_date_str > created_date:
+                from src.toolbox_manager import parse_date_to_ts
+                remote_ts = parse_date_to_ts(remote_date)
+                created_ts = tb.get('created_ts', 0.0)
+                if created_ts > 0 and remote_ts > created_ts:
                     self.app.call_from_thread(self._update_toolbox_cell, tb['name'], 3, "[yellow]Needs Update[/yellow]")
         self.app.call_from_thread(self.notify, "Update check complete.", timeout=3)
 
@@ -496,8 +498,10 @@ class Ds4CockpitApp(App):
             else:
                 remote_date = get_remote_image_date(tb['image'])
                 if remote_date:
-                    remote_date_str = remote_date[:10]
-                    if tb.get('created') and remote_date_str > tb.get('created', ''):
+                    from src.toolbox_manager import parse_date_to_ts
+                    remote_ts = parse_date_to_ts(remote_date)
+                    created_ts = tb.get('created_ts', 0.0)
+                    if created_ts > 0 and remote_ts > created_ts:
                         to_update.append(tb)
                     else:
                         already_updated.append(tb)

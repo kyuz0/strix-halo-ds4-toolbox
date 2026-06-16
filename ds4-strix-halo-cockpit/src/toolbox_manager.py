@@ -3,7 +3,25 @@ import os
 import urllib.request
 import json
 import shutil
+import re
+from datetime import datetime, timezone
 from .config import load_toolboxes
+
+def parse_date_to_ts(date_str: str) -> float:
+    if not date_str:
+        return 0.0
+    try:
+        m = re.search(r'(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})(?:\.\d+)?\s+([+-]\d{4})', date_str)
+        if m:
+            iso_str = f"{m.group(1)}T{m.group(2)}{m.group(3)}"
+            return datetime.strptime(iso_str, "%Y-%m-%dT%H:%M:%S%z").astimezone(timezone.utc).timestamp()
+        
+        if 'T' in date_str:
+            ds = date_str.replace('Z', '+00:00')
+            return datetime.fromisoformat(ds).astimezone(timezone.utc).timestamp()
+    except Exception:
+        pass
+    return 0.0
 
 def detect_engines() -> list[str]:
     engines = []
@@ -53,9 +71,11 @@ def get_installed_toolboxes(registry_match: str, specific_engine: str = None) ->
                     status = status.replace("292 years ago", "Unknown Date")
                     
                     created = ""
+                    created_ts = 0.0
                     if len(parts) >= 4:
                         created_raw = parts[3].strip()
                         created = created_raw.split()[0] if created_raw else ""
+                        created_ts = parse_date_to_ts(created_raw)
                     
                     # Normalize by stripping docker.io/ prefix for robust matching
                     r_norm = registry_match.replace("docker.io/", "") if registry_match else ""
@@ -66,6 +86,7 @@ def get_installed_toolboxes(registry_match: str, specific_engine: str = None) ->
                             "image": image,
                             "status": status,
                             "created": created,
+                            "created_ts": created_ts,
                             "engine": engine
                         })
         except Exception:
@@ -107,6 +128,7 @@ def get_all_toolboxes() -> dict:
                     "description": desc,
                     "status": "Not Installed",
                     "created": "",
+                    "created_ts": 0.0,
                     "engine": engine,
                     "args": ctb.get("engine_args", []),
                     "group": group_name,
@@ -121,6 +143,7 @@ def get_all_toolboxes() -> dict:
         tb["server_binary"] = "ds4-server"
         if "created" not in tb:
             tb["created"] = ""
+            tb["created_ts"] = 0.0
         unsupported.append(tb)
         
     if unsupported:
