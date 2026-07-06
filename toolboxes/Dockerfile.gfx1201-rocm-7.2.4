@@ -52,10 +52,10 @@ RUN git clone -b release/rocm-rel-7.2 --single-branch --depth 1 \
   && cmake --install build \
   && rm -rf /tmp/rocWMMA
 
-# ds4 (PR #461: discrete GPU memory management by cattivik66)
+# ds4 (PR #461 discrete GPU memory + gfx1201 WMMA intrinsics)
 WORKDIR /opt/ds4
-ARG REPO=https://github.com/cattivik66/ds4.git
-ARG BRANCH=fix/rocm-discrete-gpu-memory
+ARG REPO=https://github.com/kyuz0/ds4.git
+ARG BRANCH=gfx1201-discrete-gpu
 RUN git clone -b ${BRANCH} --single-branch ${REPO} . \
   && git clean -xdf \
   && make rocm ROCM_ARCH=gfx1201 ROCM_PATH=/opt/rocm \
