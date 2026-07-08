@@ -32,21 +32,34 @@ def detect_engines() -> list[str]:
     return engines
 
 def get_toolbox_engine() -> str:
+    is_debian_arch = False
     if os.path.exists("/etc/os-release"):
         with open("/etc/os-release", "r") as f:
             content = f.read().lower()
-            if "id=ubuntu" in content or "id=debian" in content or "id=arch" in content:
-                engines = detect_engines()
-                return "podman" if "podman" in engines else "docker"
+            if any(x in content for x in ["id=ubuntu", "id=debian", "id=arch", "id_like=ubuntu", "id_like=debian", "id_like=arch"]):
+                is_debian_arch = True
+
+    if is_debian_arch:
+        engines = detect_engines()
+        return "podman" if "podman" in engines else "docker"
     return "podman"
 
 def get_os_toolbox_cmd() -> str:
+    prefer_distrobox = False
     if os.path.exists("/etc/os-release"):
         with open("/etc/os-release", "r") as f:
             content = f.read().lower()
-            if "id=ubuntu" in content or "id=debian" in content or "id=arch" in content:
-                return "distrobox"
-    return "toolbox"
+            if any(x in content for x in ["id=ubuntu", "id=debian", "id=arch", "id_like=ubuntu", "id_like=debian", "id_like=arch"]):
+                prefer_distrobox = True
+
+    if prefer_distrobox and shutil.which("distrobox"):
+        return "distrobox"
+    elif shutil.which("toolbox"):
+        return "toolbox"
+    elif shutil.which("distrobox"):
+        return "distrobox"
+
+    return "distrobox" if prefer_distrobox else "toolbox"
 
 def get_installed_toolboxes(registry_match: str, specific_engine: str = None) -> list[dict]:
     """Returns a list of dicts with name, image, status, engine."""

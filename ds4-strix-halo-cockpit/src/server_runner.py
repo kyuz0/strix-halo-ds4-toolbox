@@ -40,7 +40,7 @@ def build_server_cmd(engine: str, image: str, model_path: str, ctx: int,
     
     is_multinode = role and role != "Standalone"
 
-    docker_args = [engine, "run", "--rm", "-it"]
+    docker_args = [engine, "run", "--rm", "-it", "--name", "ds4-cockpit-server"]
     docker_args.extend(engine_args)
     
     # ROCm requires host IPC sharing and ptrace capabilities to avoid HSA memory mapping errors
