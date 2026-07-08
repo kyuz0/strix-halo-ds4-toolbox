@@ -7,6 +7,30 @@ import re
 from datetime import datetime, timezone
 from .config import load_toolboxes
 
+def upgrade_groups_for_podman(engine: str, args: list[str]) -> list[str]:
+    """When using podman, replace --group-add video/render with --group-add keep-groups.
+    
+    Podman's --group-add with named groups resolves GIDs inside the container,
+    which may not match the host's video/render GIDs needed for /dev/kfd access.
+    --group-add keep-groups passes through all host supplementary GIDs by number.
+    Docker does not support keep-groups, so we leave args unchanged for Docker.
+    """
+    if engine != "podman":
+        return list(args)
+    result = []
+    added_keep = False
+    i = 0
+    while i < len(args):
+        if args[i] == "--group-add" and i + 1 < len(args) and args[i+1] in ("video", "render"):
+            if not added_keep:
+                result.extend(["--group-add", "keep-groups"])
+                added_keep = True
+            i += 2
+        else:
+            result.append(args[i])
+            i += 1
+    return result
+
 def parse_date_to_ts(date_str: str) -> float:
     if not date_str:
         return 0.0
@@ -172,10 +196,11 @@ def create_toolbox(name: str, image: str, args: list[str]):
     # Pull first
     subprocess.run([engine, "pull", image], check=True)
     
+    resolved_args = upgrade_groups_for_podman(engine, args)
     full_cmd = [cmd, "create", name, "--image", image]
-    if args:
+    if resolved_args:
         full_cmd.append("--")
-        full_cmd.extend(args)
+        full_cmd.extend(resolved_args)
     subprocess.run(full_cmd, check=True)
 
 def delete_toolbox(name: str):

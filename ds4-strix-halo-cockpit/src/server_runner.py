@@ -1,6 +1,7 @@
 import os
 import shlex
 from src.model_manager import get_models_dir
+from src.toolbox_manager import upgrade_groups_for_podman
 
 def _parse_peer_addr(peer_addr: str) -> tuple[str, str]:
     """Parse peer address input into (ip, port). Supports 'IP PORT', 'IP:PORT', or bare 'IP'."""
@@ -36,6 +37,7 @@ def build_server_cmd(engine: str, image: str, model_path: str, ctx: int,
     
     models_dir = str(get_models_dir())
     engine_args = _clean_engine_args(toolbox_config.get("args", []))
+    engine_args = upgrade_groups_for_podman(engine, engine_args)
     server_binary = toolbox_config.get("server_binary", "ds4-server")
     
     is_multinode = role and role != "Standalone"
