@@ -283,15 +283,14 @@ class Ds4CockpitApp(App):
     def refresh_server_images(self):
         if not hasattr(self, 'toolboxes_dict'): return
         
-        images = set()
-        for tb in self.toolboxes_dict.values():
-            images.add(tb["image"])
+        # Use dict to preserve insertion order from config (first toolbox = default)
+        images = dict.fromkeys(tb["image"] for tb in self.toolboxes_dict.values())
                     
         sel_image = self.query_one("#sel_image", SearchableSelect)
-        sorted_images = sorted(list(images), key=lambda x: (1 if "multi-node" in x else 0, x))
-        sel_image.set_options([(img, img) for img in sorted_images])
-        if sorted_images:
-            sel_image.value = sorted_images[0]
+        ordered_images = list(images)
+        sel_image.set_options([(img, img) for img in ordered_images])
+        if ordered_images:
+            sel_image.value = ordered_images[0]
 
 
 

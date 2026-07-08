@@ -9,7 +9,7 @@
           "tag": "rocm-7.2.4",
           "description": "antirez upstream — Recommended for most users",
           "engine_args": ["--device", "/dev/dri", "--device", "/dev/kfd",
-                          "--group-add", "video", "--group-add", "render",
+                          "--group-add", "keep-groups",
                           "--group-add", "sudo", "--security-opt", "seccomp=unconfined"],
           "server_binary": "ds4-server"
         },
@@ -18,7 +18,7 @@
           "tag": "multi-node-rocm-7.2.4",
           "description": "Multi-node distributed inference support",
           "engine_args": ["--device", "/dev/dri", "--device", "/dev/kfd",
-                          "--group-add", "video", "--group-add", "render",
+                          "--group-add", "keep-groups",
                           "--group-add", "sudo", "--security-opt", "seccomp=unconfined"],
           "server_binary": "ds4-server"
         },
@@ -27,7 +27,7 @@
           "tag": "gfx1201-rocm-7.2.4",
           "description": "RDNA 4 discrete GPU (gfx1201) — experimental",
           "engine_args": ["--device", "/dev/dri", "--device", "/dev/kfd",
-                          "--group-add", "video", "--group-add", "render",
+                          "--group-add", "keep-groups",
                           "--group-add", "sudo", "--security-opt", "seccomp=unconfined"],
           "server_binary": "ds4-server"
         }
