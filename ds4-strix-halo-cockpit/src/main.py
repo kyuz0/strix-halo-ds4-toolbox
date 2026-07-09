@@ -658,10 +658,10 @@ class Ds4CockpitApp(App):
     def _do_download_model(self, repo: str, filename: str) -> None:
         cmd = get_download_cmd(repo, filename)
         with self.suspend():
-            print(f"\nRunning: HF_HUB_ENABLE_HF_TRANSFER=1 {' '.join(cmd)}")
+            print(f"\nRunning: HF_XET_HIGH_PERFORMANCE=1 {' '.join(cmd)}")
             try:
                 env = os.environ.copy()
-                env["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
+                env["HF_XET_HIGH_PERFORMANCE"] = "1"
                 subprocess.run(cmd, env=env, check=True)
                 print("\nDownload Complete!")
             except FileNotFoundError:
