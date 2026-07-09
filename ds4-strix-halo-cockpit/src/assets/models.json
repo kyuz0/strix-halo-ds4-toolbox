@@ -28,6 +28,22 @@
       "size_gb": 3.6,
       "nodes": 1,
       "recommended": false
+    },
+    {
+      "name": "CyberNeurova Abliterated IQ2_XXS imatrix (~81 GB)",
+      "repo": "audreyt/CyberNeurova-DeepSeek-V4-Flash-abliterated-GGUF",
+      "filename": "cyberneurova-DeepSeek-V4-Flash-abliterated-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix.gguf",
+      "size_gb": 81.0,
+      "nodes": 1,
+      "recommended": false
+    },
+    {
+      "name": "CyberNeurova Abliterated Q4_K imatrix (~154 GB) — Dual Node",
+      "repo": "audreyt/CyberNeurova-DeepSeek-V4-Flash-abliterated-GGUF",
+      "filename": "cyberneurova-DeepSeek-V4-Flash-abliterated-Q4KExperts-F16HC-F16Compressor-F16Indexer-Q8Attn-Q8Shared-Q8Out-chat-v2-imatrix.gguf",
+      "size_gb": 154.0,
+      "nodes": 2,
+      "recommended": false
     }
   ]
 }

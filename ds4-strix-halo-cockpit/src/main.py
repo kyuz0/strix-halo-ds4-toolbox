@@ -197,13 +197,15 @@ class Ds4CockpitApp(App):
             sel_engine.value = engines[0]
 
         curated_cfg = load_models()
-        self.download_repo = curated_cfg.get("repo", "antirez/deepseek-v4-gguf")
+        self.download_default_repo = curated_cfg.get("repo", "antirez/deepseek-v4-gguf")
         
         sel_dl = self.query_one("#sel_download_model", SearchableSelect)
         opts = []
         for m in curated_cfg.get("models", []):
             rec = "⭐ " if m.get("recommended") else ""
-            opts.append((f"{rec}{m['name']} ({m['size_gb']}GB)", m["filename"]))
+            model_repo = m.get("repo", self.download_default_repo)
+            # Encode repo + filename together so download knows which repo to use
+            opts.append((f"{rec}{m['name']} ({m['size_gb']}GB)", f"{model_repo}::{m['filename']}"))
         sel_dl.set_options(opts)
 
         sel_role = self.query_one("#sel_role", SearchableSelect)
@@ -629,13 +631,18 @@ class Ds4CockpitApp(App):
             self.notify("Failed to save models directory config.", severity="error")
 
     def _handle_download(self):
-        filename = self.query_one("#sel_download_model", SearchableSelect).value
-        if not isinstance(filename, str) or not filename:
+        raw_value = self.query_one("#sel_download_model", SearchableSelect).value
+        if not isinstance(raw_value, str) or not raw_value:
             return
-            
-        repo = self.download_repo
+
+        # Values are encoded as "repo::filename"
+        if "::" in raw_value:
+            repo, filename = raw_value.split("::", 1)
+        else:
+            repo, filename = self.download_default_repo, raw_value
         
         if is_model_downloaded(filename):
+            self._download_repo = repo
             self._download_filename = filename
             self.app.push_screen(
                 ConfirmModal(f"{filename} appears to be already downloaded.\nDo you want to download it again?"),
@@ -646,7 +653,7 @@ class Ds4CockpitApp(App):
 
     def _on_redownload_confirmed(self, confirmed: bool) -> None:
         if confirmed:
-            self._do_download_model(self.download_repo, self._download_filename)
+            self._do_download_model(self._download_repo, self._download_filename)
 
     def _do_download_model(self, repo: str, filename: str) -> None:
         cmd = get_download_cmd(repo, filename)
