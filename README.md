@@ -135,7 +135,7 @@ docker run --rm -it -p 8000:8000 \
   --ipc=host --cap-add=SYS_PTRACE --security-opt seccomp=unconfined \
   -v ~/ds4:/models \
   kyuz0/strix-halo-ds4-toolbox:rocm-7.2.4 \
-  ds4-server -m /models/DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix.gguf --ctx 124000 --kv-disk-dir /tmp/ds4-kv --kv-disk-space-mb 8192
+  ds4-server -m /models/DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix.gguf --ctx 124000 --kv-disk-dir /tmp/ds4-kv --kv-disk-space-mb 8192 --host 0.0.0.0
 ```
 *(Note: You can replace `docker` with `podman`. If you encounter permission issues when mounting the volume on systems with SELinux (like Fedora/RHEL), append `:z` to the mount: `-v ~/ds4:/models:z`).*
 
