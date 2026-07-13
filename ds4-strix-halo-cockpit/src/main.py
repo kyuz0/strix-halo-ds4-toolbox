@@ -1,15 +1,16 @@
 from textual.app import App, ComposeResult
 from textual.theme import Theme
 from textual import on, events, work
-from textual.widgets import Header, Footer, TabbedContent, TabPane, Button, Static, Label, Input, DataTable, Collapsible
+from textual.widgets import Header, Footer, TabbedContent, TabPane, Button, Static, Label, Input, DataTable, Collapsible, Switch
 from textual.containers import Vertical, Horizontal, VerticalScroll
 import os
 import subprocess
+from pathlib import Path
 
 from src.toolbox_manager import get_all_toolboxes, detect_engines, get_os_toolbox_cmd, get_remote_image_date, create_toolbox, delete_toolbox
 from src.model_manager import scan_local_models, get_download_cmd, get_models_dir, save_models_dir, is_model_downloaded
 from src.server_runner import build_server_cmd
-from src.config import load_models
+from src.config import get_model_server_defaults, load_models
 from src.widgets import ConfirmModal, SelectModal, SearchableSelect
 import pyfiglet
 
@@ -47,6 +48,7 @@ class Ds4CockpitApp(App):
     .inline-row Input { width: 1fr; }
     .short-field { width: 1fr; height: auto; max-height: 3; margin-right: 2; }
     .short-field .inline-label { width: auto; min-width: 8; height: 1; }
+    .short-field Switch { width: auto; }
     
     #banner { text-align: center; margin-bottom: 0; height: auto; text-style: bold; }
     TabbedContent { height: 1fr; }
@@ -117,13 +119,15 @@ class Ds4CockpitApp(App):
                     ),
                     Horizontal(
                         Horizontal(Label("Context", classes="inline-label"), Input(placeholder="126000", id="inp_ctx", value="126000"), classes="short-field"),
+                        Horizontal(Label("Prefill Chunk", classes="inline-label"), Input(placeholder="Auto (model default)", id="inp_prefill_chunk", value=""), classes="short-field"),
                         Horizontal(Label("Host", classes="inline-label"), Input(placeholder="localhost", id="inp_host", value="localhost"), classes="short-field"),
                         Horizontal(Label("Port", classes="inline-label"), Input(placeholder="8000", id="inp_port", value="8000"), classes="short-field"),
                         classes="inline-row"
                     ),
                     Horizontal(
-                        Horizontal(Label("KV Disk Dir", classes="inline-label"), Input(placeholder="/tmp/ds4-kv", id="inp_kv_dir", value="/tmp/ds4-kv"), classes="short-field"),
-                        Horizontal(Label("KV Disk MB", classes="inline-label"), Input(placeholder="8192", id="inp_kv_mb", value="8192"), classes="short-field"),
+                        Horizontal(Label("KV Disk Cache", classes="inline-label"), Switch(value=False, id="switch_kv_disk"), classes="short-field"),
+                        Horizontal(Label("Host Cache Dir", classes="inline-label"), Input(placeholder="~/.cache/ds4-kv", id="inp_kv_dir", value="~/.cache/ds4-kv", disabled=True), classes="short-field"),
+                        Horizontal(Label("KV Disk MB", classes="inline-label"), Input(placeholder="8192", id="inp_kv_mb", value="8192", disabled=True), classes="short-field"),
                         classes="inline-row"
                     ),
                     Horizontal(
@@ -352,6 +356,19 @@ class Ds4CockpitApp(App):
             inp_ctx.value = "126000"
             inp_layers.value = ""
             inp_peer.placeholder = "IP Port"
+
+    @on(SearchableSelect.Changed, "#sel_model")
+    def on_server_model_changed(self, event: SearchableSelect.Changed) -> None:
+        defaults = get_model_server_defaults(event.value)
+        prefill_chunk = defaults.get("prefill_chunk")
+        self.query_one("#inp_prefill_chunk", Input).value = (
+            str(prefill_chunk) if prefill_chunk is not None else ""
+        )
+
+    @on(Switch.Changed, "#switch_kv_disk")
+    def on_kv_disk_changed(self, event: Switch.Changed) -> None:
+        self.query_one("#inp_kv_dir", Input).disabled = not event.value
+        self.query_one("#inp_kv_mb", Input).disabled = not event.value
             
     @on(SearchableSelect.Changed, "#sel_mtp_model")
     def on_mtp_changed(self, event: SearchableSelect.Changed) -> None:
@@ -554,6 +571,8 @@ class Ds4CockpitApp(App):
         ctx = self.query_one("#inp_ctx", Input).value
         host = self.query_one("#inp_host", Input).value
         port = self.query_one("#inp_port", Input).value
+        prefill_chunk = self.query_one("#inp_prefill_chunk", Input).value.strip()
+        kv_enabled = self.query_one("#switch_kv_disk", Switch).value
         kv_dir = self.query_one("#inp_kv_dir", Input).value
         kv_mb = self.query_one("#inp_kv_mb", Input).value
         mtp_model = self.query_one("#sel_mtp_model", SearchableSelect).value
@@ -563,7 +582,29 @@ class Ds4CockpitApp(App):
         custom_args = self.query_one("#inp_custom_args", Input).value
 
         if engine and image and model_path and ctx.isdigit():
-            kv_mb_val = int(kv_mb) if kv_mb.isdigit() else 8192
+            if prefill_chunk and (not prefill_chunk.isdigit() or int(prefill_chunk) <= 0):
+                self.notify("Prefill chunk must be a positive integer or blank for Auto.", severity="warning")
+                return
+
+            kv_dir_value = ""
+            kv_mb_val = 0
+            if kv_enabled:
+                if not kv_dir.strip():
+                    self.notify("Choose a host directory for the KV disk cache.", severity="warning")
+                    return
+                if not kv_mb.isdigit() or int(kv_mb) <= 0:
+                    self.notify("KV disk size must be a positive number of MB.", severity="warning")
+                    return
+                try:
+                    kv_path = Path(kv_dir).expanduser().resolve()
+                    kv_path.mkdir(parents=True, exist_ok=True)
+                except OSError as exc:
+                    self.notify(f"Could not create KV cache directory: {exc}", severity="error")
+                    return
+                kv_dir_value = str(kv_path)
+                kv_mb_val = int(kv_mb)
+
+            prefill_chunk_value = int(prefill_chunk) if prefill_chunk else None
             
             tb_config = {}
             if hasattr(self, "toolboxes_dict"):
@@ -573,8 +614,9 @@ class Ds4CockpitApp(App):
                         break
 
             cmd = build_server_cmd(
-                engine, image, model_path, int(ctx), 
-                host, port, kv_dir, kv_mb_val, mtp_model, custom_args,
+                engine, image, model_path, int(ctx),
+                host, port, kv_enabled, kv_dir_value, kv_mb_val,
+                prefill_chunk_value, mtp_model, custom_args,
                 role, layers, peer_addr,
                 tb_config
             )

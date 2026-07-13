@@ -95,6 +95,9 @@ HF_XET_HIGH_PERFORMANCE=1 hf download antirez/deepseek-v4-gguf \
   --local-dir ~/ds4
 ```
 
+This model leaves less memory headroom for ROCm graph buffers. At long contexts,
+start it with `--prefill-chunk 2048`; see [Prefill Chunk Size](#prefill-chunk-size).
+
 #### MTP Speculative Decoding Weights (Optional)
 
 The MTP model (~3.6 GB) enables [speculative decoding](#speculative-decoding-mtp):
@@ -124,7 +127,7 @@ ds4 -m ~/ds4/DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix
 
 **Using Toolbox/Distrobox (from inside the container):**
 ```sh
-ds4-server -m ~/ds4/DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix.gguf --ctx 124000 --kv-disk-dir /tmp/ds4-kv --kv-disk-space-mb 8192
+ds4-server -m ~/ds4/DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix.gguf --ctx 124000
 ```
 
 **Using standard Docker/Podman:**
@@ -133,11 +136,11 @@ docker run --rm -it -p 8000:8000 \
   --device /dev/kfd --device /dev/dri \
   --group-add video --group-add render \
   --ipc=host --cap-add=SYS_PTRACE --security-opt seccomp=unconfined \
-  -v ~/ds4:/models \
+  -v ~/ds4:/models:ro \
   kyuz0/strix-halo-ds4-toolbox:rocm-7.2.4 \
-  ds4-server -m /models/DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix.gguf --ctx 124000 --kv-disk-dir /tmp/ds4-kv --kv-disk-space-mb 8192
+  ds4-server -m /models/DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix.gguf --ctx 124000
 ```
-*(Note: You can replace `docker` with `podman`. If you encounter permission issues when mounting the volume on systems with SELinux (like Fedora/RHEL), append `:z` to the mount: `-v ~/ds4:/models:z`).*
+*(Note: You can replace `docker` with `podman`. If you encounter permission issues when mounting volumes on systems with SELinux (like Fedora/RHEL), add `z` to each volume option, for example `-v ~/ds4:/models:ro,z`.)*
 
 
 **Supported endpoints:**
@@ -157,22 +160,81 @@ curl http://127.0.0.1:8000/v1/chat/completions \
   }'
 ```
 
-### KV Cache Disk Offloading
+### Prefill Chunk Size
 
-The `--kv-disk-dir` and `--kv-disk-space-mb` flags in the server examples above are **optional**. The server runs fine without them. When enabled, ds4 checkpoints the KV cache to disk as `<sha1>.kv` files keyed by the rendered prompt prefix. antirez calls this treating the KV cache as a **"first-class disk citizen"**.
+`--prefill-chunk N` sets the maximum number of prompt tokens processed in one
+GPU prefill batch. It does **not** limit the context length. Smaller chunks use
+less ROCm graph and scratch memory, but may reduce prefill throughput because
+the prompt is processed in more batches.
+
+For DeepSeek V4 Flash, ds4 automatically uses 4096-token chunks for contexts
+larger than 4096 tokens. The ~97 GB hybrid Q2/Q4 model has much less memory
+headroom on a 128 GB Strix Halo system, so 2048 is the recommended starting
+point for long contexts:
+
+```sh
+ds4-server -m ~/ds4/DeepSeek-V4-Flash-Layers37-42Q4KExperts-OtherExpertLayersIQ2XXSGateUp-Q2KDown-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix-fixed.gguf \
+  --ctx 64000 \
+  --prefill-chunk 2048
+```
+
+The same option works with the interactive `ds4` CLI and `ds4-bench`. Try 2048 if the default
+4096 OOMs during startup or long-context prefill. Leave the option unset to use
+ds4's automatic model-specific default.
+
+The cockpit applies 2048 automatically when the curated ~97 GB hybrid model is
+selected, while keeping the field editable. Other models remain on Auto.
+
+### KV Disk Cache (Optional)
+
+Disk caching is disabled by default. Enable it with `--kv-disk-dir` and
+`--kv-disk-space-mb` when useful. ds4 checkpoints KV state as `<sha1>.kv` files
+keyed by the rendered prompt prefix—what antirez calls treating the KV cache as
+a **"first-class disk citizen"**.
 
 **Why enable it:**
 - **Prefix reuse** — coding agents resend the same system prompt every request. Disk caching skips re-prefill on matching prefixes, restoring from SSD instead of recomputing thousands of tokens.
 - **Session persistence** — KV state survives server restarts and reboots.
-- **Extend context beyond RAM** — inactive context parks on SSD, letting you use larger `--ctx` values than pure RAM would allow.
+- **Session switching** — checkpoints for inactive conversations can be restored later without keeping multiple live KV caches in memory.
 
 **Why skip it:** less SSD wear, simpler setup. Fine for one-off interactive use where you don't repeat prompts.
 
 > [!IMPORTANT]
-> **Strongly recommended for coding agents.** Without `--kv-disk-dir`, every request from Claude Code / opencode / Aider pays the full prefill cost. With it, only the first request is slow.
+> Disk caching does not reduce the memory allocated for the active context and
+> does not make an otherwise-too-large `--ctx` fit in RAM. It is a checkpoint
+> and resume mechanism for matching prompt prefixes.
+
+For Toolbox/Distrobox, choose a persistent directory in your shared home:
+
+```sh
+mkdir -p ~/.cache/ds4-kv
+ds4-server -m ~/ds4/DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix.gguf \
+  --ctx 124000 \
+  --kv-disk-dir ~/.cache/ds4-kv \
+  --kv-disk-space-mb 8192
+```
+
+With standard Docker/Podman, bind-mount the host cache into the disposable
+container and pass the container path to ds4:
+
+```sh
+mkdir -p ~/.cache/ds4-kv
+docker run --rm -it -p 8000:8000 \
+  --device /dev/kfd --device /dev/dri \
+  --group-add video --group-add render \
+  --ipc=host --cap-add=SYS_PTRACE --security-opt seccomp=unconfined \
+  -v ~/ds4:/models:ro \
+  -v ~/.cache/ds4-kv:/var/cache/ds4-kv \
+  kyuz0/strix-halo-ds4-toolbox:rocm-7.2.4 \
+  ds4-server -m /models/DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix.gguf \
+    --ctx 124000 \
+    --kv-disk-dir /var/cache/ds4-kv \
+    --kv-disk-space-mb 8192
+```
 
 > [!NOTE]
-> `/tmp` is cleared on reboot. For persistent checkpoints across reboots, use `~/.cache/ds4-kv` instead.
+> The cockpit performs this host-directory mount automatically when its KV Disk
+> Cache switch is enabled.
 
 ### 5. Benchmarking
 
@@ -301,4 +363,3 @@ docker build -t ds4-rocm-7.2.4 -f toolboxes/Dockerfile.rocm-7.2.4 toolboxes/
 | OS | Fedora 42/43, Ubuntu 24.04+ |
 | Kernel | 6.18.5+ |
 | Firmware | Avoid `linux-firmware-20251125` (breaks ROCm). Use `20260110`+. |
-

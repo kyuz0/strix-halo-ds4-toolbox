@@ -13,6 +13,14 @@ def load_models() -> dict:
             return json.load(f)
     return {"repo": "antirez/deepseek-v4-gguf", "models": []}
 
+def get_model_server_defaults(model_path: str) -> dict:
+    """Return curated server defaults for a local model, matched by filename."""
+    filename = Path(model_path).name
+    for model in load_models().get("models", []):
+        if model.get("filename") == filename:
+            return dict(model.get("server_defaults", {}))
+    return {}
+
 def load_toolboxes() -> dict:
     if TOOLBOXES_JSON.exists():
         with open(TOOLBOXES_JSON, "r", encoding="utf-8") as f:

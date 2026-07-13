@@ -3,6 +3,8 @@ import shlex
 from src.model_manager import get_models_dir
 from src.toolbox_manager import upgrade_groups_for_podman
 
+KV_DISK_CONTAINER_DIR = "/var/cache/ds4-kv"
+
 def _parse_peer_addr(peer_addr: str) -> tuple[str, str]:
     """Parse peer address input into (ip, port). Supports 'IP PORT', 'IP:PORT', or bare 'IP'."""
     if ":" in peer_addr and len(peer_addr.split()) == 1:
@@ -29,9 +31,10 @@ def _clean_engine_args(engine_args: list[str]) -> list[str]:
         clean.append(engine_args[i])
     return clean
 
-def build_server_cmd(engine: str, image: str, model_path: str, ctx: int, 
-                     host: str, port: str, kv_disk_dir: str, kv_disk_mb: int,
-                     mtp_path: str, custom_args: str,
+def build_server_cmd(engine: str, image: str, model_path: str, ctx: int,
+                     host: str, port: str,
+                     kv_disk_enabled: bool, kv_disk_dir: str, kv_disk_mb: int,
+                     prefill_chunk: int | None, mtp_path: str, custom_args: str,
                      role: str, layers: str, peer_addr: str,
                      toolbox_config: dict) -> list[str]:
     
@@ -71,6 +74,8 @@ def build_server_cmd(engine: str, image: str, model_path: str, ctx: int,
         docker_args.extend(["-p", port_mapping])
 
     docker_args.extend(["-v", f"{models_dir}:/models:ro"])
+    if kv_disk_enabled:
+        docker_args.extend(["-v", f"{kv_disk_dir}:{KV_DISK_CONTAINER_DIR}"])
     
     # Calculate relative paths for /models
     rel_path = os.path.relpath(model_path, models_dir)
@@ -84,8 +89,14 @@ def build_server_cmd(engine: str, image: str, model_path: str, ctx: int,
         "--port", str(port)
     ]
     
-    if kv_disk_dir:
-        server_args.extend(["--kv-disk-dir", kv_disk_dir, "--kv-disk-space-mb", str(kv_disk_mb)])
+    if kv_disk_enabled:
+        server_args.extend([
+            "--kv-disk-dir", KV_DISK_CONTAINER_DIR,
+            "--kv-disk-space-mb", str(kv_disk_mb),
+        ])
+
+    if prefill_chunk is not None:
+        server_args.extend(["--prefill-chunk", str(prefill_chunk)])
         
     if mtp_path:
         mtp_rel = os.path.relpath(mtp_path, models_dir)

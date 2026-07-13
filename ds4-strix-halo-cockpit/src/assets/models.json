@@ -13,7 +13,10 @@
       "filename": "DeepSeek-V4-Flash-Layers37-42Q4KExperts-OtherExpertLayersIQ2XXSGateUp-Q2KDown-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix-fixed.gguf",
       "size_gb": 97.0,
       "nodes": 1,
-      "recommended": false
+      "recommended": false,
+      "server_defaults": {
+        "prefill_chunk": 2048
+      }
     },
     {
       "name": "Q4 imatrix (~153.3 GB) — Dual Node",
