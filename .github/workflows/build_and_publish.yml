@@ -93,6 +93,10 @@ jobs:
           docker run --rm "${LI}" ds4 --help || { status=$?; echo "ds4 exited with status $status"; [[ $status -eq 0 || $status -eq 1 || $status -eq 2 || $status -eq 132 || $status -eq 134 ]]; }
           docker run --rm "${LI}" ds4-server --help || { status=$?; echo "ds4-server exited with status $status"; [[ $status -eq 0 || $status -eq 1 || $status -eq 2 || $status -eq 132 || $status -eq 134 ]]; }
           docker run --rm "${LI}" ds4-bench --help || { status=$?; echo "ds4-bench exited with status $status"; [[ $status -eq 0 || $status -eq 1 || $status -eq 2 || $status -eq 132 || $status -eq 134 ]]; }
+          if [[ "${B}" == "rocm-7.2.4" || "${B}" == "rocm7-nightlies" ]]; then
+            docker run --rm "${LI}" ds4-eval --help || { status=$?; echo "ds4-eval exited with status $status"; [[ $status -eq 0 || $status -eq 1 || $status -eq 2 || $status -eq 132 || $status -eq 134 ]]; }
+            docker run --rm "${LI}" ds4-agent --help || { status=$?; echo "ds4-agent exited with status $status"; [[ $status -eq 0 || $status -eq 1 || $status -eq 2 || $status -eq 132 || $status -eq 134 ]]; }
+          fi
 
           echo "→ Tag & push immutable → ${IMM}"
           docker tag "${LI}" "${IMM}"

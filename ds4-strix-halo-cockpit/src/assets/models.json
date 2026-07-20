@@ -5,31 +5,27 @@
       "name": "IQ2_XXS imatrix (~80.8 GB) — Single Node Recommended",
       "filename": "DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix.gguf",
       "size_gb": 80.8,
-      "nodes": 1,
       "recommended": true
     },
     {
       "name": "Hybrid Q2/Q4 imatrix (~97 GB) — Higher Quality",
       "filename": "DeepSeek-V4-Flash-Layers37-42Q4KExperts-OtherExpertLayersIQ2XXSGateUp-Q2KDown-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix-fixed.gguf",
       "size_gb": 97.0,
-      "nodes": 1,
       "recommended": false,
       "server_defaults": {
         "prefill_chunk": 2048
       }
     },
     {
-      "name": "Q4 imatrix (~153.3 GB) — Dual Node",
+      "name": "Q4 imatrix (~153.3 GB)",
       "filename": "DeepSeek-V4-Flash-Q4KExperts-F16HC-F16Compressor-F16Indexer-Q8Attn-Q8Shared-Q8Out-chat-v2-imatrix.gguf",
       "size_gb": 153.3,
-      "nodes": 2,
       "recommended": false
     },
     {
       "name": "MTP Speculative Decoding Weights (~3.6 GB)",
       "filename": "DeepSeek-V4-Flash-MTP-Q4K-Q8_0-F32.gguf",
       "size_gb": 3.6,
-      "nodes": 1,
       "recommended": false
     },
     {
@@ -37,15 +33,20 @@
       "repo": "audreyt/CyberNeurova-DeepSeek-V4-Flash-abliterated-GGUF",
       "filename": "cyberneurova-DeepSeek-V4-Flash-abliterated-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix.gguf",
       "size_gb": 81.0,
-      "nodes": 1,
       "recommended": false
     },
     {
-      "name": "CyberNeurova Abliterated Q4_K imatrix (~154 GB) — Dual Node",
+      "name": "CyberNeurova Abliterated Q4_K imatrix (~154 GB)",
       "repo": "audreyt/CyberNeurova-DeepSeek-V4-Flash-abliterated-GGUF",
       "filename": "cyberneurova-DeepSeek-V4-Flash-abliterated-Q4KExperts-F16HC-F16Compressor-F16Indexer-Q8Attn-Q8Shared-Q8Out-chat-v2-imatrix.gguf",
       "size_gb": 154.0,
-      "nodes": 2,
+      "recommended": false
+    },
+    {
+      "name": "GLM-5.2 UD-IQ2_XXS RoutedIQ2XXS (~211 GB)",
+      "repo": "antirez/glm-5.2-gguf",
+      "filename": "GLM-5.2-UD-IQ2_XXS_RoutedIQ2XXS_blk78Q2K.gguf",
+      "size_gb": 211.0,
       "recommended": false
     }
   ]
