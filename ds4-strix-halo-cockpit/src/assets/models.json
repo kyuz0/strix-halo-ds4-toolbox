@@ -43,10 +43,10 @@
       "recommended": false
     },
     {
-      "name": "GLM-5.2 UD-IQ2_XXS RoutedIQ2XXS (~211 GB)",
+      "name": "GLM-5.2 UD-Q2_K RoutedQ2K (~262 GB)",
       "repo": "antirez/glm-5.2-gguf",
-      "filename": "GLM-5.2-UD-IQ2_XXS_RoutedIQ2XXS_blk78Q2K.gguf",
-      "size_gb": 211.0,
+      "filename": "GLM-5.2-UD-Q2_K_RoutedQ2K.gguf",
+      "size_gb": 262.0,
       "recommended": false
     }
   ]
