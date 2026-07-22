@@ -23,6 +23,15 @@
           "server_binary": "ds4-server"
         },
         {
+          "name": "ds4-glm-rocm-7.2.4",
+          "tag": "glm-rocm-7.2.4",
+          "description": "GLM ROCm IQ2 down-quantisation fix",
+          "engine_args": ["--device", "/dev/dri", "--device", "/dev/kfd",
+                          "--group-add", "video", "--group-add", "render",
+                          "--group-add", "sudo", "--security-opt", "seccomp=unconfined"],
+          "server_binary": "ds4-server"
+        },
+        {
           "name": "ds4-gfx1201-rocm-7.2.4",
           "tag": "gfx1201-rocm-7.2.4",
           "description": "RDNA 4 discrete GPU (gfx1201) — experimental",
