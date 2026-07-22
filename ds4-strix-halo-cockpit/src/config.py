@@ -14,12 +14,34 @@ def load_models() -> dict:
     return {"repo": "antirez/deepseek-v4-gguf", "models": []}
 
 def get_model_server_defaults(model_path: str) -> dict:
-    """Return curated server defaults for a local model, matched by filename."""
+    """Return curated server defaults for a local model, matched by filename or family."""
     filename = Path(model_path).name
-    for model in load_models().get("models", []):
+    data = load_models()
+    families = data.get("families", {})
+    
+    res = dict(data.get("default_server_defaults", {}))
+    
+    for model in data.get("models", []):
         if model.get("filename") == filename:
-            return dict(model.get("server_defaults", {}))
-    return {}
+            family_name = model.get("family")
+            if family_name and family_name in families:
+                res.update(families[family_name])
+            res.update(model.get("server_defaults", {}))
+            return res
+
+    # Heuristic fallback for unlisted local model filenames
+    if "GLM" in filename.upper():
+        if "glm-5.2" in families:
+            res.update(families["glm-5.2"])
+        else:
+            res.update({"ssd_streaming": True, "coordinator_layers": "0:37", "worker_layers": "38:output"})
+    else:
+        if "deepseek-v4" in families:
+            res.update(families["deepseek-v4"])
+        else:
+            res.update({"coordinator_layers": "0:21", "worker_layers": "22:output"})
+
+    return res
 
 def load_toolboxes() -> dict:
     if TOOLBOXES_JSON.exists():

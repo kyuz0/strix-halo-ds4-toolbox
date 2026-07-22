@@ -36,7 +36,9 @@ def build_server_cmd(engine: str, image: str, model_path: str, ctx: int,
                      kv_disk_enabled: bool, kv_disk_dir: str, kv_disk_mb: int,
                      prefill_chunk: int | None, mtp_path: str, custom_args: str,
                      role: str, layers: str, peer_addr: str,
-                     toolbox_config: dict) -> list[str]:
+                     toolbox_config: dict,
+                     ssd_enabled: bool = False, ssd_experts: str = "",
+                     ssd_full_layers: str = "", ssd_cold: bool = False) -> list[str]:
     
     models_dir = str(get_models_dir())
     engine_args = _clean_engine_args(toolbox_config.get("args", []))
@@ -94,6 +96,15 @@ def build_server_cmd(engine: str, image: str, model_path: str, ctx: int,
             "--kv-disk-dir", KV_DISK_CONTAINER_DIR,
             "--kv-disk-space-mb", str(kv_disk_mb),
         ])
+
+    if ssd_enabled:
+        server_args.append("--ssd-streaming")
+        if ssd_experts.strip():
+            server_args.extend(["--ssd-streaming-cache-experts", ssd_experts.strip()])
+        if ssd_full_layers.strip():
+            server_args.extend(["--ssd-streaming-full-layers", ssd_full_layers.strip()])
+        if ssd_cold:
+            server_args.append("--ssd-streaming-cold")
 
     if prefill_chunk is not None:
         server_args.extend(["--prefill-chunk", str(prefill_chunk)])

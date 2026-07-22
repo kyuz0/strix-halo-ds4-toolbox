@@ -131,6 +131,13 @@ class Ds4CockpitApp(App):
                         classes="inline-row"
                     ),
                     Horizontal(
+                        Horizontal(Label("SSD Streaming", classes="inline-label"), Switch(value=False, id="switch_ssd_streaming"), classes="short-field"),
+                        Horizontal(Label("Expert Budget", classes="inline-label"), Input(placeholder="e.g. 16GB", id="inp_ssd_experts", value="", disabled=True), classes="short-field"),
+                        Horizontal(Label("Full Layers", classes="inline-label"), Input(placeholder="e.g. 0", id="inp_ssd_full_layers", value="", disabled=True), classes="short-field"),
+                        Horizontal(Label("Cold Preload", classes="inline-label"), Switch(value=False, id="switch_ssd_cold", disabled=True), classes="short-field"),
+                        classes="inline-row"
+                    ),
+                    Horizontal(
                         Label("MTP Model", classes="inline-label"),
                         SearchableSelect(prompt="Select MTP Model (Optional)", id="sel_mtp_model"),
                         classes="inline-row"
@@ -344,13 +351,18 @@ class Ds4CockpitApp(App):
         inp_layers = self.query_one("#inp_layers", Input)
         inp_peer = self.query_one("#inp_peer_addr", Input)
         
+        model_path = self.query_one("#sel_model", SearchableSelect).value
+        defaults = get_model_server_defaults(model_path)
+        coord_layers = defaults.get("coordinator_layers", "0:21")
+        worker_layers = defaults.get("worker_layers", "22:output")
+
         if role == "Coordinator":
             inp_ctx.value = "262144"
-            inp_layers.value = "0:21"
+            inp_layers.value = coord_layers
             inp_peer.placeholder = "Listen IP Port (e.g. 0.0.0.0 8081)"
         elif role == "Worker":
             inp_ctx.value = "262144"
-            inp_layers.value = "22:output"
+            inp_layers.value = worker_layers
             inp_peer.placeholder = "Coord IP Port (e.g. 192.168.1.1 8081)"
         else:
             inp_ctx.value = "126000"
@@ -364,11 +376,30 @@ class Ds4CockpitApp(App):
         self.query_one("#inp_prefill_chunk", Input).value = (
             str(prefill_chunk) if prefill_chunk is not None else ""
         )
+        ssd_streaming = defaults.get("ssd_streaming")
+        if ssd_streaming is not None:
+            self.query_one("#switch_ssd_streaming", Switch).value = bool(ssd_streaming)
+        ssd_experts = defaults.get("ssd_experts")
+        if ssd_experts is not None:
+            self.query_one("#inp_ssd_experts", Input).value = str(ssd_experts)
+
+        role = self.query_one("#sel_role", SearchableSelect).value
+        inp_layers = self.query_one("#inp_layers", Input)
+        if role == "Coordinator":
+            inp_layers.value = defaults.get("coordinator_layers", "0:21")
+        elif role == "Worker":
+            inp_layers.value = defaults.get("worker_layers", "22:output")
 
     @on(Switch.Changed, "#switch_kv_disk")
     def on_kv_disk_changed(self, event: Switch.Changed) -> None:
         self.query_one("#inp_kv_dir", Input).disabled = not event.value
         self.query_one("#inp_kv_mb", Input).disabled = not event.value
+
+    @on(Switch.Changed, "#switch_ssd_streaming")
+    def on_ssd_streaming_changed(self, event: Switch.Changed) -> None:
+        self.query_one("#inp_ssd_experts", Input).disabled = not event.value
+        self.query_one("#inp_ssd_full_layers", Input).disabled = not event.value
+        self.query_one("#switch_ssd_cold", Switch).disabled = not event.value
             
     @on(SearchableSelect.Changed, "#sel_mtp_model")
     def on_mtp_changed(self, event: SearchableSelect.Changed) -> None:
@@ -575,6 +606,10 @@ class Ds4CockpitApp(App):
         kv_enabled = self.query_one("#switch_kv_disk", Switch).value
         kv_dir = self.query_one("#inp_kv_dir", Input).value
         kv_mb = self.query_one("#inp_kv_mb", Input).value
+        ssd_enabled = self.query_one("#switch_ssd_streaming", Switch).value
+        ssd_experts = self.query_one("#inp_ssd_experts", Input).value
+        ssd_full_layers = self.query_one("#inp_ssd_full_layers", Input).value
+        ssd_cold = self.query_one("#switch_ssd_cold", Switch).value
         mtp_model = self.query_one("#sel_mtp_model", SearchableSelect).value
         role = self.query_one("#sel_role", SearchableSelect).value
         layers = self.query_one("#inp_layers", Input).value
@@ -618,7 +653,8 @@ class Ds4CockpitApp(App):
                 host, port, kv_enabled, kv_dir_value, kv_mb_val,
                 prefill_chunk_value, mtp_model, custom_args,
                 role, layers, peer_addr,
-                tb_config
+                tb_config,
+                ssd_enabled, ssd_experts, ssd_full_layers, ssd_cold
             )
             with self.suspend():
                 print(f"\nStarting ds4-server with command:\n{' '.join(cmd)}\n")
