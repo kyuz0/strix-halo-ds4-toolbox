@@ -34,28 +34,28 @@ ENV ROCM_PATH=/opt/rocm \
 
 # rocWMMA – cmake install (version header is generated, raw cp won't work)
 RUN git clone -b release/rocm-rel-7.2 --single-branch --depth 1 \
-      https://github.com/ROCm/rocWMMA.git /tmp/rocWMMA \
+  https://github.com/ROCm/rocWMMA.git /tmp/rocWMMA \
   && cd /tmp/rocWMMA \
   && CC=$ROCM_PATH/llvm/bin/amdclang \
-     CXX=$ROCM_PATH/llvm/bin/amdclang++ \
-     cmake -B build -S . -G Ninja \
-       -DCMAKE_BUILD_TYPE=Release \
-       -DCMAKE_INSTALL_PREFIX=$ROCM_PATH \
-       -DROCWMMA_BUILD_TESTS=OFF \
-       -DROCWMMA_BUILD_SAMPLES=OFF \
-       -DGPU_TARGETS="gfx1151" \
-       -DOpenMP_CXX_FLAGS="-fopenmp=libomp" \
-       -DOpenMP_C_FLAGS="-fopenmp=libomp" \
-       -DOpenMP_omp_LIBRARY="/usr/lib64/libomp.so" \
-       -DOpenMP_CXX_LIB_NAMES="omp" \
-       -DOpenMP_C_LIB_NAMES="omp" \
+  CXX=$ROCM_PATH/llvm/bin/amdclang++ \
+  cmake -B build -S . -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_INSTALL_PREFIX=$ROCM_PATH \
+  -DROCWMMA_BUILD_TESTS=OFF \
+  -DROCWMMA_BUILD_SAMPLES=OFF \
+  -DGPU_TARGETS="gfx1151" \
+  -DOpenMP_CXX_FLAGS="-fopenmp=libomp" \
+  -DOpenMP_C_FLAGS="-fopenmp=libomp" \
+  -DOpenMP_omp_LIBRARY="/usr/lib64/libomp.so" \
+  -DOpenMP_CXX_LIB_NAMES="omp" \
+  -DOpenMP_C_LIB_NAMES="omp" \
   && cmake --install build \
   && rm -rf /tmp/rocWMMA
 
 # ds4 (GLM ROCm IQ2 down-quantisation fix)
 WORKDIR /opt/ds4
 ARG REPO=https://github.com/kyuz0/ds4.git
-ARG BRANCH=fix/rocm-glm-iq2-down
+ARG BRANCH=fix/rocm-distributed-glm
 RUN git clone -b ${BRANCH} --single-branch ${REPO} . \
   && git clean -xdf \
   && make rocm ROCM_ARCH=gfx1151 ROCM_PATH=/opt/rocm \
