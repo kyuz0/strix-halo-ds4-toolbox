@@ -344,30 +344,50 @@ class Ds4CockpitApp(App):
         except Exception:
             pass
 
-    @on(SearchableSelect.Changed, "#sel_role")
-    def on_role_changed(self, event: SearchableSelect.Changed) -> None:
-        role = event.value
+    def _apply_server_role_defaults(
+        self, role: str, defaults: dict, reset_streaming: bool = False
+    ) -> None:
         inp_ctx = self.query_one("#inp_ctx", Input)
         inp_layers = self.query_one("#inp_layers", Input)
         inp_peer = self.query_one("#inp_peer_addr", Input)
-        
-        model_path = self.query_one("#sel_model", SearchableSelect).value
-        defaults = get_model_server_defaults(model_path)
         coord_layers = defaults.get("coordinator_layers", "0:21")
         worker_layers = defaults.get("worker_layers", "22:output")
 
         if role == "Coordinator":
-            inp_ctx.value = "262144"
+            inp_ctx.value = str(defaults.get("distributed_ctx", 262144))
             inp_layers.value = coord_layers
             inp_peer.placeholder = "Listen IP Port (e.g. 0.0.0.0 8081)"
         elif role == "Worker":
-            inp_ctx.value = "262144"
+            inp_ctx.value = str(defaults.get("distributed_ctx", 262144))
             inp_layers.value = worker_layers
             inp_peer.placeholder = "Coord IP Port (e.g. 192.168.1.1 8081)"
         else:
-            inp_ctx.value = "126000"
+            inp_ctx.value = str(defaults.get("standalone_ctx", 126000))
             inp_layers.value = ""
             inp_peer.placeholder = "IP Port"
+
+        has_streaming_defaults = (
+            "ssd_streaming" in defaults or "distributed_ssd_streaming" in defaults
+        )
+        if has_streaming_defaults or reset_streaming:
+            # Full-model GLM ROCm requires SSD streaming, while distributed
+            # layer slices are resident. Other model families keep their
+            # existing role-change behavior unless their defaults say otherwise.
+            ssd_streaming = (
+                defaults.get("ssd_streaming", False)
+                if role == "Standalone"
+                else defaults.get("distributed_ssd_streaming", False)
+            )
+            self.query_one("#switch_ssd_streaming", Switch).value = bool(ssd_streaming)
+            self.query_one("#inp_ssd_experts", Input).value = str(defaults.get("ssd_experts", ""))
+            self.query_one("#inp_ssd_full_layers", Input).value = str(defaults.get("ssd_full_layers", ""))
+            self.query_one("#switch_ssd_cold", Switch).value = bool(defaults.get("ssd_cold", False))
+
+    @on(SearchableSelect.Changed, "#sel_role")
+    def on_role_changed(self, event: SearchableSelect.Changed) -> None:
+        model_path = self.query_one("#sel_model", SearchableSelect).value
+        defaults = get_model_server_defaults(model_path)
+        self._apply_server_role_defaults(event.value, defaults)
 
     @on(SearchableSelect.Changed, "#sel_model")
     def on_server_model_changed(self, event: SearchableSelect.Changed) -> None:
@@ -376,19 +396,8 @@ class Ds4CockpitApp(App):
         self.query_one("#inp_prefill_chunk", Input).value = (
             str(prefill_chunk) if prefill_chunk is not None else ""
         )
-        ssd_streaming = defaults.get("ssd_streaming")
-        if ssd_streaming is not None:
-            self.query_one("#switch_ssd_streaming", Switch).value = bool(ssd_streaming)
-        ssd_experts = defaults.get("ssd_experts")
-        if ssd_experts is not None:
-            self.query_one("#inp_ssd_experts", Input).value = str(ssd_experts)
-
         role = self.query_one("#sel_role", SearchableSelect).value
-        inp_layers = self.query_one("#inp_layers", Input)
-        if role == "Coordinator":
-            inp_layers.value = defaults.get("coordinator_layers", "0:21")
-        elif role == "Worker":
-            inp_layers.value = defaults.get("worker_layers", "22:output")
+        self._apply_server_role_defaults(role, defaults, reset_streaming=True)
 
     @on(Switch.Changed, "#switch_kv_disk")
     def on_kv_disk_changed(self, event: Switch.Changed) -> None:
@@ -615,6 +624,13 @@ class Ds4CockpitApp(App):
         layers = self.query_one("#inp_layers", Input).value
         peer_addr = self.query_one("#inp_peer_addr", Input).value
         custom_args = self.query_one("#inp_custom_args", Input).value
+        defaults = get_model_server_defaults(model_path)
+        dist_prefill_chunk = (
+            defaults.get("dist_prefill_chunk") if role == "Coordinator" else None
+        )
+        dist_prefill_window = (
+            defaults.get("dist_prefill_window") if role == "Coordinator" else None
+        )
 
         if engine and image and model_path and ctx.isdigit():
             if prefill_chunk and (not prefill_chunk.isdigit() or int(prefill_chunk) <= 0):
@@ -654,7 +670,8 @@ class Ds4CockpitApp(App):
                 prefill_chunk_value, mtp_model, custom_args,
                 role, layers, peer_addr,
                 tb_config,
-                ssd_enabled, ssd_experts, ssd_full_layers, ssd_cold
+                ssd_enabled, ssd_experts, ssd_full_layers, ssd_cold,
+                dist_prefill_chunk, dist_prefill_window
             )
             with self.suspend():
                 print(f"\nStarting ds4-server with command:\n{' '.join(cmd)}\n")

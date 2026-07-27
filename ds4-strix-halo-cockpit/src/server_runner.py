@@ -38,7 +38,9 @@ def build_server_cmd(engine: str, image: str, model_path: str, ctx: int,
                      role: str, layers: str, peer_addr: str,
                      toolbox_config: dict,
                      ssd_enabled: bool = False, ssd_experts: str = "",
-                     ssd_full_layers: str = "", ssd_cold: bool = False) -> list[str]:
+                     ssd_full_layers: str = "", ssd_cold: bool = False,
+                     dist_prefill_chunk: int | None = None,
+                     dist_prefill_window: int | None = None) -> list[str]:
     
     models_dir = str(get_models_dir())
     engine_args = _clean_engine_args(toolbox_config.get("args", []))
@@ -121,6 +123,10 @@ def build_server_cmd(engine: str, image: str, model_path: str, ctx: int,
             coord_ip, coord_port = _parse_peer_addr(peer_addr)
             if role.lower() == "coordinator":
                 server_args.extend(["--listen", coord_ip, coord_port])
+                if dist_prefill_chunk is not None:
+                    server_args.extend(["--dist-prefill-chunk", str(dist_prefill_chunk)])
+                if dist_prefill_window is not None:
+                    server_args.extend(["--dist-prefill-window", str(dist_prefill_window)])
             elif role.lower() == "worker":
                 server_args.extend(["--coordinator", coord_ip, coord_port])
 
