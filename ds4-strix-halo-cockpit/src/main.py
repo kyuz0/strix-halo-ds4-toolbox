@@ -119,7 +119,7 @@ class Ds4CockpitApp(App):
                     ),
                     Horizontal(
                         Horizontal(Label("Context", classes="inline-label"), Input(placeholder="126000", id="inp_ctx", value="126000"), classes="short-field"),
-                        Horizontal(Label("Prefill Chunk", classes="inline-label"), Input(placeholder="Auto (model default)", id="inp_prefill_chunk", value=""), classes="short-field"),
+                        Horizontal(Label("Graph Prefill Chunk", classes="inline-label"), Input(placeholder="Auto (model default)", id="inp_prefill_chunk", value=""), classes="short-field"),
                         Horizontal(Label("Host", classes="inline-label"), Input(placeholder="localhost", id="inp_host", value="localhost"), classes="short-field"),
                         Horizontal(Label("Port", classes="inline-label"), Input(placeholder="8000", id="inp_port", value="8000"), classes="short-field"),
                         classes="inline-row"
@@ -146,6 +146,11 @@ class Ds4CockpitApp(App):
                         Horizontal(Label("Role", classes="inline-label"), SearchableSelect(prompt="Standalone", id="sel_role"), classes="short-field"),
                         Horizontal(Label("Layers", classes="inline-label"), Input(placeholder="e.g. 0:21", id="inp_layers", value=""), classes="short-field"),
                         Horizontal(Label("Address", classes="inline-label"), Input(placeholder="IP Port", id="inp_peer_addr", value=""), classes="short-field"),
+                        classes="inline-row"
+                    ),
+                    Horizontal(
+                        Horizontal(Label("Dist Prefill Chunk", classes="inline-label"), Input(placeholder="Auto", id="inp_dist_prefill_chunk", value="", disabled=True), classes="short-field"),
+                        Horizontal(Label("Dist Prefill Window", classes="inline-label"), Input(placeholder="Auto", id="inp_dist_prefill_window", value="", disabled=True), classes="short-field"),
                         classes="inline-row"
                     ),
                     Horizontal(
@@ -350,6 +355,8 @@ class Ds4CockpitApp(App):
         inp_ctx = self.query_one("#inp_ctx", Input)
         inp_layers = self.query_one("#inp_layers", Input)
         inp_peer = self.query_one("#inp_peer_addr", Input)
+        inp_dist_chunk = self.query_one("#inp_dist_prefill_chunk", Input)
+        inp_dist_window = self.query_one("#inp_dist_prefill_window", Input)
         coord_layers = defaults.get("coordinator_layers", "0:21")
         worker_layers = defaults.get("worker_layers", "22:output")
 
@@ -365,6 +372,20 @@ class Ds4CockpitApp(App):
             inp_ctx.value = str(defaults.get("standalone_ctx", 126000))
             inp_layers.value = ""
             inp_peer.placeholder = "IP Port"
+
+        is_coordinator = role == "Coordinator"
+        inp_dist_chunk.disabled = not is_coordinator
+        inp_dist_window.disabled = not is_coordinator
+        inp_dist_chunk.value = (
+            str(defaults["dist_prefill_chunk"])
+            if is_coordinator and defaults.get("dist_prefill_chunk") is not None
+            else ""
+        )
+        inp_dist_window.value = (
+            str(defaults["dist_prefill_window"])
+            if is_coordinator and defaults.get("dist_prefill_window") is not None
+            else ""
+        )
 
         has_streaming_defaults = (
             "ssd_streaming" in defaults or "distributed_ssd_streaming" in defaults
@@ -623,18 +644,23 @@ class Ds4CockpitApp(App):
         role = self.query_one("#sel_role", SearchableSelect).value
         layers = self.query_one("#inp_layers", Input).value
         peer_addr = self.query_one("#inp_peer_addr", Input).value
+        dist_prefill_chunk = self.query_one("#inp_dist_prefill_chunk", Input).value.strip()
+        dist_prefill_window = self.query_one("#inp_dist_prefill_window", Input).value.strip()
         custom_args = self.query_one("#inp_custom_args", Input).value
-        defaults = get_model_server_defaults(model_path)
-        dist_prefill_chunk = (
-            defaults.get("dist_prefill_chunk") if role == "Coordinator" else None
-        )
-        dist_prefill_window = (
-            defaults.get("dist_prefill_window") if role == "Coordinator" else None
-        )
 
         if engine and image and model_path and ctx.isdigit():
             if prefill_chunk and (not prefill_chunk.isdigit() or int(prefill_chunk) <= 0):
                 self.notify("Prefill chunk must be a positive integer or blank for Auto.", severity="warning")
+                return
+            if dist_prefill_chunk and (
+                not dist_prefill_chunk.isdigit() or int(dist_prefill_chunk) <= 0
+            ):
+                self.notify("Distributed prefill chunk must be a positive integer or blank for Auto.", severity="warning")
+                return
+            if dist_prefill_window and (
+                not dist_prefill_window.isdigit() or int(dist_prefill_window) <= 0
+            ):
+                self.notify("Distributed prefill window must be a positive integer or blank for Auto.", severity="warning")
                 return
 
             kv_dir_value = ""
@@ -656,6 +682,12 @@ class Ds4CockpitApp(App):
                 kv_mb_val = int(kv_mb)
 
             prefill_chunk_value = int(prefill_chunk) if prefill_chunk else None
+            dist_prefill_chunk_value = (
+                int(dist_prefill_chunk) if role == "Coordinator" and dist_prefill_chunk else None
+            )
+            dist_prefill_window_value = (
+                int(dist_prefill_window) if role == "Coordinator" and dist_prefill_window else None
+            )
             
             tb_config = {}
             if hasattr(self, "toolboxes_dict"):
@@ -671,7 +703,7 @@ class Ds4CockpitApp(App):
                 role, layers, peer_addr,
                 tb_config,
                 ssd_enabled, ssd_experts, ssd_full_layers, ssd_cold,
-                dist_prefill_chunk, dist_prefill_window
+                dist_prefill_chunk_value, dist_prefill_window_value
             )
             with self.suspend():
                 print(f"\nStarting ds4-server with command:\n{' '.join(cmd)}\n")
