@@ -274,7 +274,7 @@ run_fw2 \
   --role coordinator \
   --layers 0:21 \
   --listen 192.168.100.2 8081 \
-  --dist-prefill-chunk 4096 \
+  --dist-prefill-chunk 512 \
   --dist-prefill-window 2 \
   --debug \
   2>&1 | tee /tmp/ds4-rocm-qa/DS-Q4-D-coordinator.log
@@ -460,7 +460,7 @@ In `strix-halo-ds4-toolbox/ds4-strix-halo-cockpit`, select the
 | GLM coordinator | `--layers 0:37`, no `--ssd-streaming`, `--dist-prefill-chunk 256`, `--dist-prefill-window 2` |
 | GLM worker | `--layers 38:output`, no coordinator-only prefill flags |
 | DeepSeek Q4 standalone streaming | `--ssd-streaming` when its switch is enabled |
-| DeepSeek Q4 coordinator | `--layers 0:21`; no `--ssd-streaming` |
+| DeepSeek Q4 coordinator | `--layers 0:21`, no `--ssd-streaming`, `--dist-prefill-chunk 512`, `--dist-prefill-window 2` |
 | DeepSeek Q4 worker | `--layers 22:output` |
 
 For GLM distributed mode, the cockpit should also select its model-specific

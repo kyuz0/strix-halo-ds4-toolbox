@@ -34,7 +34,11 @@
       "family": "deepseek-v4",
       "filename": "DeepSeek-V4-Flash-Q4KExperts-F16HC-F16Compressor-F16Indexer-Q8Attn-Q8Shared-Q8Out-chat-v2-imatrix.gguf",
       "size_gb": 153.3,
-      "recommended": false
+      "recommended": false,
+      "server_defaults": {
+        "dist_prefill_chunk": 512,
+        "dist_prefill_window": 2
+      }
     },
     {
       "name": "MTP Speculative Decoding Weights (~3.6 GB)",
