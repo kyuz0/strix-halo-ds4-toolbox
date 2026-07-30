@@ -13,14 +13,14 @@
   },
   "models": [
     {
-      "name": "IQ2_XXS imatrix (~80.8 GB) — Single Node Recommended",
+      "name": "DeepSeek V4 Flash — IQ2_XXS imatrix (~80.8 GB) — Single Node Recommended",
       "family": "deepseek-v4",
       "filename": "DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix.gguf",
       "size_gb": 80.8,
       "recommended": true
     },
     {
-      "name": "Hybrid Q2/Q4 imatrix (~97 GB) — Higher Quality",
+      "name": "DeepSeek V4 Flash — Hybrid Q2/Q4 imatrix (~97 GB) — Higher Quality",
       "family": "deepseek-v4",
       "filename": "DeepSeek-V4-Flash-Layers37-42Q4KExperts-OtherExpertLayersIQ2XXSGateUp-Q2KDown-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix-fixed.gguf",
       "size_gb": 97.0,
@@ -30,7 +30,7 @@
       }
     },
     {
-      "name": "Q4 imatrix (~153.3 GB)",
+      "name": "DeepSeek V4 Flash — Q4 imatrix (~153.3 GB)",
       "family": "deepseek-v4",
       "filename": "DeepSeek-V4-Flash-Q4KExperts-F16HC-F16Compressor-F16Indexer-Q8Attn-Q8Shared-Q8Out-chat-v2-imatrix.gguf",
       "size_gb": 153.3,
@@ -41,21 +41,21 @@
       }
     },
     {
-      "name": "MTP Speculative Decoding Weights (~3.6 GB)",
+      "name": "DeepSeek V4 Flash — MTP Speculative Decoding Weights (~3.6 GB)",
       "family": "deepseek-v4",
       "filename": "DeepSeek-V4-Flash-MTP-Q4K-Q8_0-F32.gguf",
       "size_gb": 3.6,
       "recommended": false
     },
     {
-      "name": "DSpark Speculative Decoding Support (~5.6 GB)",
+      "name": "DeepSeek V4 Flash — DSpark Speculative Decoding Support (~5.6 GB)",
       "family": "deepseek-v4",
       "filename": "DeepSeek-V4-Flash-DSpark-support.gguf",
       "size_gb": 5.6,
       "recommended": false
     },
     {
-      "name": "CyberNeurova Abliterated IQ2_XXS imatrix (~81 GB)",
+      "name": "DeepSeek V4 Flash — CyberNeurova Abliterated IQ2_XXS imatrix (~81 GB)",
       "family": "deepseek-v4",
       "repo": "audreyt/CyberNeurova-DeepSeek-V4-Flash-abliterated-GGUF",
       "filename": "cyberneurova-DeepSeek-V4-Flash-abliterated-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix.gguf",
@@ -63,7 +63,7 @@
       "recommended": false
     },
     {
-      "name": "CyberNeurova Abliterated Q4_K imatrix (~154 GB)",
+      "name": "DeepSeek V4 Flash — CyberNeurova Abliterated Q4_K imatrix (~154 GB)",
       "family": "deepseek-v4",
       "repo": "audreyt/CyberNeurova-DeepSeek-V4-Flash-abliterated-GGUF",
       "filename": "cyberneurova-DeepSeek-V4-Flash-abliterated-Q4KExperts-F16HC-F16Compressor-F16Indexer-Q8Attn-Q8Shared-Q8Out-chat-v2-imatrix.gguf",
