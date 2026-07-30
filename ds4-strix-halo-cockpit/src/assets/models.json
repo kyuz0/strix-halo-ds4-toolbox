@@ -48,6 +48,13 @@
       "recommended": false
     },
     {
+      "name": "DSpark Speculative Decoding Support (~5.6 GB)",
+      "family": "deepseek-v4",
+      "filename": "DeepSeek-V4-Flash-DSpark-support.gguf",
+      "size_gb": 5.6,
+      "recommended": false
+    },
+    {
       "name": "CyberNeurova Abliterated IQ2_XXS imatrix (~81 GB)",
       "family": "deepseek-v4",
       "repo": "audreyt/CyberNeurova-DeepSeek-V4-Flash-abliterated-GGUF",
