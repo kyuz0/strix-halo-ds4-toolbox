@@ -5,8 +5,8 @@
       "name": "Official Toolboxes",
       "toolboxes": [
         {
-          "name": "ds4-rocm-7.2.4",
-          "tag": "rocm-7.2.4",
+          "name": "ds4-rocm-7.14",
+          "tag": "rocm-7.14",
           "description": "antirez upstream — Recommended for most users",
           "engine_args": [
             "--device",
@@ -25,8 +25,8 @@
           "server_binary": "ds4-server"
         },
         {
-          "name": "ds4-multi-node-rocm-7.2.4",
-          "tag": "multi-node-rocm-7.2.4",
+          "name": "ds4-multi-node-rocm-7.14",
+          "tag": "multi-node-rocm-7.14",
           "description": "Multi-node distributed inference support",
           "engine_args": [
             "--device",
@@ -45,8 +45,8 @@
           "server_binary": "ds4-server"
         },
         {
-          "name": "ds4-glm-rocm-7.2.4",
-          "tag": "glm-rocm-7.2.4",
+          "name": "ds4-glm-rocm-7.14",
+          "tag": "glm-rocm-7.14",
           "description": "GLM ROCm support",
           "engine_args": [
             "--device",
@@ -65,9 +65,29 @@
           "server_binary": "ds4-server"
         },
         {
-          "name": "ds4-gfx1201-rocm-7.2.4",
-          "tag": "gfx1201-rocm-7.2.4",
+          "name": "ds4-gfx1201-rocm-7.14",
+          "tag": "gfx1201-rocm-7.14",
           "description": "RDNA 4 discrete GPU (gfx1201) — experimental",
+          "engine_args": [
+            "--device",
+            "/dev/dri",
+            "--device",
+            "/dev/kfd",
+            "--group-add",
+            "video",
+            "--group-add",
+            "render",
+            "--group-add",
+            "sudo",
+            "--security-opt",
+            "seccomp=unconfined"
+          ],
+          "server_binary": "ds4-server"
+        },
+        {
+          "name": "ds4-therock-nightly",
+          "tag": "therock-nightly",
+          "description": "Latest TheRock multi-arch gfx1151 nightly",
           "engine_args": [
             "--device",
             "/dev/dri",

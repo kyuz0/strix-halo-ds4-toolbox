@@ -13,16 +13,16 @@
   },
   "models": [
     {
-      "name": "DeepSeek V4 Flash — IQ2_XXS imatrix (~80.8 GB) — Single Node Recommended",
+      "name": "DeepSeek V4 Flash 0731 — IQ2_XXS imatrix (~80.8 GB) — Single Node Recommended",
       "family": "deepseek-v4",
-      "filename": "DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix.gguf",
+      "filename": "DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix-0731.gguf",
       "size_gb": 80.8,
       "recommended": true
     },
     {
-      "name": "DeepSeek V4 Flash — Hybrid Q2/Q4 imatrix (~97 GB) — Higher Quality",
+      "name": "DeepSeek V4 Flash 0731 — Hybrid Q2/Q4 imatrix (~97 GB) — Higher Quality",
       "family": "deepseek-v4",
-      "filename": "DeepSeek-V4-Flash-Layers37-42Q4KExperts-OtherExpertLayersIQ2XXSGateUp-Q2KDown-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix-fixed.gguf",
+      "filename": "DeepSeek-V4-Flash-Layers37-42Q4KExperts-OtherExpertLayersIQ2XXSGateUp-Q2KDown-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix-fixed-0731.gguf",
       "size_gb": 97.0,
       "recommended": false,
       "server_defaults": {
@@ -30,45 +30,15 @@
       }
     },
     {
-      "name": "DeepSeek V4 Flash — Q4 imatrix (~153.3 GB)",
+      "name": "DeepSeek V4 Flash 0731 — Q4 imatrix (~153.3 GB)",
       "family": "deepseek-v4",
-      "filename": "DeepSeek-V4-Flash-Q4KExperts-F16HC-F16Compressor-F16Indexer-Q8Attn-Q8Shared-Q8Out-chat-v2-imatrix.gguf",
+      "filename": "DeepSeek-V4-Flash-Q4KExperts-F16HC-F16Compressor-F16Indexer-Q8Attn-Q8Shared-Q8Out-chat-v2-imatrix-0731.gguf",
       "size_gb": 153.3,
       "recommended": false,
       "server_defaults": {
         "dist_prefill_chunk": 512,
         "dist_prefill_window": 2
       }
-    },
-    {
-      "name": "DeepSeek V4 Flash — MTP Speculative Decoding Weights (~3.6 GB)",
-      "family": "deepseek-v4",
-      "filename": "DeepSeek-V4-Flash-MTP-Q4K-Q8_0-F32.gguf",
-      "size_gb": 3.6,
-      "recommended": false
-    },
-    {
-      "name": "DeepSeek V4 Flash — DSpark Speculative Decoding Support (~5.6 GB)",
-      "family": "deepseek-v4",
-      "filename": "DeepSeek-V4-Flash-DSpark-support.gguf",
-      "size_gb": 5.6,
-      "recommended": false
-    },
-    {
-      "name": "DeepSeek V4 Flash — CyberNeurova Abliterated IQ2_XXS imatrix (~81 GB)",
-      "family": "deepseek-v4",
-      "repo": "audreyt/CyberNeurova-DeepSeek-V4-Flash-abliterated-GGUF",
-      "filename": "cyberneurova-DeepSeek-V4-Flash-abliterated-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix.gguf",
-      "size_gb": 81.0,
-      "recommended": false
-    },
-    {
-      "name": "DeepSeek V4 Flash — CyberNeurova Abliterated Q4_K imatrix (~154 GB)",
-      "family": "deepseek-v4",
-      "repo": "audreyt/CyberNeurova-DeepSeek-V4-Flash-abliterated-GGUF",
-      "filename": "cyberneurova-DeepSeek-V4-Flash-abliterated-Q4KExperts-F16HC-F16Compressor-F16Indexer-Q8Attn-Q8Shared-Q8Out-chat-v2-imatrix.gguf",
-      "size_gb": 154.0,
-      "recommended": false
     },
     {
       "name": "GLM-5.2 UD-IQ2_XXS RoutedIQ2XXS blk78Q2K (~196.6 GB)",

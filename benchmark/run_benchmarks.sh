@@ -14,7 +14,7 @@ STEP_INCR=2048
 GEN_TOKENS=128
 
 TOOLBOXES=(
-  "ds4-rocm-7.2.4"
+  "ds4-rocm-7.14"
 )
 
 mkdir -p "$RESULTS_DIR"

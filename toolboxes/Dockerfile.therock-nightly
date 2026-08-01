@@ -1,0 +1,123 @@
+# build stage
+FROM registry.fedoraproject.org/fedora:43 AS builder
+
+RUN dnf -y --nodocs --setopt=install_weak_deps=False install \
+  make gcc cmake lld clang clang-devel compiler-rt libcurl-devel \
+  radeontop git vim patch curl ninja-build tar xz aria2 \
+  && dnf clean all && rm -rf /var/cache/dnf/*
+
+# Fetch the latest TheRock multi-arch Linux nightly for gfx1151.
+WORKDIR /tmp
+ARG GFX=gfx1151
+RUN set -euo pipefail; \
+  BASE="https://rocm.nightlies.amd.com/tarball-multi-arch"; \
+  KEY="$(curl -fsSL "${BASE}/" \
+  | grep -o "therock-dist-linux-${GFX}-[0-9.a]*\.tar\.gz" \
+  | sort -V | tail -n1)"; \
+  test -n "${KEY}" || { echo "No TheRock nightly tarball found for ${GFX}" >&2; exit 1; }; \
+  echo "Latest tarball: ${KEY}"; \
+  aria2c -x 16 -s 16 -j 16 --file-allocation=none "${BASE}/${KEY}" -o therock.tar.gz
+RUN mkdir -p /opt/rocm \
+  && tar xzf therock.tar.gz -C /opt/rocm --strip-components=1
+
+ENV ROCM_HOME=/opt/rocm \
+  ROCM_PATH=/opt/rocm \
+  HIP_PLATFORM=amd \
+  HIP_PATH=/opt/rocm \
+  HIP_CLANG_PATH=/opt/rocm/lib/llvm/bin \
+  HIP_INCLUDE_PATH=/opt/rocm/include \
+  HIP_LIB_PATH=/opt/rocm/lib \
+  HIP_DEVICE_LIB_PATH=/opt/rocm/lib/llvm/amdgcn/bitcode \
+  PATH=/opt/rocm/bin:/opt/rocm/lib/llvm/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+  LD_LIBRARY_PATH=/opt/rocm/lib:/opt/rocm/lib64:/opt/rocm/lib/llvm/lib \
+  LIBRARY_PATH=/opt/rocm/lib:/opt/rocm/lib64 \
+  CPATH=/opt/rocm/include \
+  PKG_CONFIG_PATH=/opt/rocm/lib/pkgconfig
+
+RUN printf '%s\n' \
+  'export ROCM_HOME=/opt/rocm' \
+  'export ROCM_PATH=/opt/rocm' \
+  'export HIP_PLATFORM=amd' \
+  'export HIP_PATH=/opt/rocm' \
+  'export HIP_CLANG_PATH=/opt/rocm/lib/llvm/bin' \
+  'export HIP_INCLUDE_PATH=/opt/rocm/include' \
+  'export HIP_LIB_PATH=/opt/rocm/lib' \
+  'export HIP_DEVICE_LIB_PATH=/opt/rocm/lib/llvm/amdgcn/bitcode' \
+  'export PATH="$ROCM_PATH/bin:$HIP_CLANG_PATH:$PATH"' \
+  'export LD_LIBRARY_PATH="$HIP_LIB_PATH:$ROCM_PATH/lib:$ROCM_PATH/lib64:$ROCM_PATH/lib/llvm/lib"' \
+  'export LIBRARY_PATH="$HIP_LIB_PATH:$ROCM_PATH/lib:$ROCM_PATH/lib64"' \
+  'export CPATH="$HIP_INCLUDE_PATH"' \
+  'export PKG_CONFIG_PATH="$ROCM_PATH/lib/pkgconfig"' \
+  > /etc/profile.d/rocm.sh \
+  && chmod +x /etc/profile.d/rocm.sh \
+  && echo 'source /etc/profile.d/rocm.sh' >> /etc/bashrc
+
+# ds4
+WORKDIR /opt/ds4
+ARG REPO=https://github.com/antirez/ds4.git
+ARG BRANCH=main
+RUN git clone -b ${BRANCH} --single-branch ${REPO} . \
+  && git clean -xdf \
+  && make -j"$(nproc)" strix-halo ROCM_ARCH=gfx1151 \
+     CFLAGS="-O3 -ffast-math -march=native -Wall -Wextra -std=c99 -D_GNU_SOURCE -fno-finite-math-only -fPIC" \
+  && cp ds4 ds4-server ds4-bench ds4-eval ds4-agent download_model.sh /usr/local/bin/
+
+# keep bin; drop headers/docs/static libs to keep image small
+RUN find /opt/rocm -type f -name '*.a' -delete \
+  && rm -rf /opt/rocm/include /opt/rocm/share \
+  /opt/rocm/lib/llvm/include /opt/rocm/lib/llvm/share
+
+# runtime
+FROM registry.fedoraproject.org/fedora-minimal:43
+
+RUN microdnf -y --nodocs --setopt=install_weak_deps=0 install \
+  bash ca-certificates libatomic libstdc++ libgcc radeontop vim procps-ng python3 \
+  && microdnf clean all && rm -rf /var/cache/dnf/* \
+  && ln -sf /usr/bin/python3 /usr/bin/python
+
+COPY --from=builder /opt/rocm /opt/rocm
+COPY --from=builder /usr/local/ /usr/local/
+
+ENV ROCM_HOME=/opt/rocm \
+  ROCM_PATH=/opt/rocm \
+  HIP_PLATFORM=amd \
+  HIP_PATH=/opt/rocm \
+  HIP_CLANG_PATH=/opt/rocm/lib/llvm/bin \
+  HIP_INCLUDE_PATH=/opt/rocm/include \
+  HIP_LIB_PATH=/opt/rocm/lib \
+  HIP_DEVICE_LIB_PATH=/opt/rocm/lib/llvm/amdgcn/bitcode \
+  PATH=/opt/rocm/bin:/opt/rocm/lib/llvm/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+  LD_LIBRARY_PATH=/opt/rocm/lib:/opt/rocm/lib64:/opt/rocm/lib/llvm/lib \
+  LIBRARY_PATH=/opt/rocm/lib:/opt/rocm/lib64 \
+  CPATH=/opt/rocm/include \
+  PKG_CONFIG_PATH=/opt/rocm/lib/pkgconfig
+
+RUN printf '%s\n' \
+  'export ROCM_HOME=/opt/rocm' \
+  'export ROCM_PATH=/opt/rocm' \
+  'export HIP_PLATFORM=amd' \
+  'export HIP_PATH=/opt/rocm' \
+  'export HIP_CLANG_PATH=/opt/rocm/lib/llvm/bin' \
+  'export HIP_INCLUDE_PATH=/opt/rocm/include' \
+  'export HIP_LIB_PATH=/opt/rocm/lib' \
+  'export HIP_DEVICE_LIB_PATH=/opt/rocm/lib/llvm/amdgcn/bitcode' \
+  'export PATH="$ROCM_PATH/bin:$HIP_CLANG_PATH:$PATH"' \
+  'export LD_LIBRARY_PATH="$HIP_LIB_PATH:$ROCM_PATH/lib:$ROCM_PATH/lib64:$ROCM_PATH/lib/llvm/lib"' \
+  'export LIBRARY_PATH="$HIP_LIB_PATH:$ROCM_PATH/lib:$ROCM_PATH/lib64"' \
+  'export CPATH="$HIP_INCLUDE_PATH"' \
+  'export PKG_CONFIG_PATH="$ROCM_PATH/lib/pkgconfig"' \
+  > /etc/profile.d/rocm.sh \
+  && chmod +x /etc/profile.d/rocm.sh \
+  && echo 'source /etc/profile.d/rocm.sh' >> /etc/bashrc
+
+# make /usr/local libs visible without touching env
+RUN echo "/usr/local/lib"  > /etc/ld.so.conf.d/local.conf \
+  && echo "/usr/local/lib64" >> /etc/ld.so.conf.d/local.conf \
+  && ldconfig
+
+# Toolbox/Distrobox shares the host home directory. Prevent the host's
+# ~/.local/lib/python* from shadowing container-installed packages
+# (e.g. hf CLI importing the host's broken huggingface_hub).
+ENV PYTHONNOUSERSITE=1
+
+CMD ["/bin/bash"]
