@@ -34,6 +34,7 @@ ARG BRANCH=gfx1201-discrete-gpu
 RUN git clone -b ${BRANCH} --single-branch ${REPO} . \
   && git clean -xdf \
   && make rocm ROCM_ARCH=gfx1201 ROCM_PATH=/opt/rocm \
+     CFLAGS="-O3 -ffast-math -march=native -Wall -Wextra -std=c99 -D_GNU_SOURCE -fno-finite-math-only -fPIC" \
   && cp ds4 ds4-server ds4-bench download_model.sh /usr/local/bin/
 
 # runtime stage
