@@ -83,13 +83,22 @@ class _DropdownOverlay(Widget):
     }
     """
 
-    def __init__(self, options: list[tuple[str, str]], on_select, x: int, y: int, width: int):
+    def __init__(
+        self,
+        options: list[tuple[str, str]],
+        on_select,
+        x: int,
+        y: int,
+        width: int,
+        highlighted_value: str | None = None,
+    ):
         super().__init__()
         self._options = list(options)
         self._on_select = on_select
         self._pos_x = x
         self._pos_y = y
         self._pos_width = width
+        self._highlighted_value = highlighted_value
         # Overlay must not steal focus
         self.can_focus = False
 
@@ -101,13 +110,30 @@ class _DropdownOverlay(Widget):
     def on_mount(self) -> None:
         self.styles.offset = (self._pos_x, self._pos_y)
         self.styles.width = self._pos_width
+        self._set_highlight(self._highlighted_value)
 
-    def update_options(self, options: list[tuple[str, str]]) -> None:
+    def _set_highlight(self, preferred_value: str | None = None) -> None:
+        """Highlight the selected value, or the first available option."""
+        opt_list = self.query_one(OptionList)
+        highlighted = 0 if self._options else None
+        if preferred_value is not None:
+            for index, (_, value) in enumerate(self._options):
+                if value == preferred_value:
+                    highlighted = index
+                    break
+        opt_list.highlighted = highlighted
+
+    def update_options(
+        self,
+        options: list[tuple[str, str]],
+        highlighted_value: str | None = None,
+    ) -> None:
         self._options = list(options)
         opt_list = self.query_one(OptionList)
         opt_list.clear_options()
         for label, _ in self._options:
             opt_list.add_option(label)
+        self._set_highlight(highlighted_value)
 
     def cursor_down(self) -> None:
         self.query_one(OptionList).action_cursor_down()
@@ -127,13 +153,10 @@ class _DropdownOverlay(Widget):
     def _on_mouse_click_option(self, event: OptionList.OptionSelected) -> None:
         """Handle mouse clicks on options (fires even when can_focus=False)."""
         event.stop()
-        label = str(event.option.prompt)
-        val = label
-        for l, v in self._options:
-            if l == label:
-                val = v
-                break
-        self._on_select(val, label)
+        index = event.option_index
+        if 0 <= index < len(self._options):
+            label, value = self._options[index]
+            self._on_select(value, label)
 
 
 # ── SearchableSelect ─────────────────────────────────────────────────────────
@@ -143,12 +166,13 @@ class SearchableSelect(Widget):
     A filterable combobox widget.
 
     Behaviour:
-    - Click or focus → shows all options in a floating overlay.
-    - Type → filters the list in real time.
+    - Closed → displays the committed selection.
+    - Click, Enter, Space, or ↑/↓ → starts an empty search and shows all options.
+    - Typing while closed → starts a new search with that character.
+    - Type while open → filters the list in real time.
     - ↑/↓ → navigate list while keeping focus on Input.
     - Enter → confirm highlighted option.
-    - Escape → close overlay without changing value.
-    - Tab/blur → close overlay.
+    - Escape or Tab/blur → cancel the search and restore the selection.
 
     Emits SearchableSelect.Changed when the selected value changes.
     Compatible with Select.Changed drop-in replacement pattern via `.value`.
@@ -165,7 +189,15 @@ class SearchableSelect(Widget):
         height: 1;
         width: 1fr;
         background: transparent;
-        padding: 0 1;
+        padding: 0 3 0 1;
+    }
+    SearchableSelect > .dropdown-indicator {
+        dock: right;
+        width: 3;
+        height: 1;
+        background: transparent;
+        color: #e57373;
+        content-align: center middle;
     }
     SearchableSelect:focus-within {
         background: #303030;
@@ -194,10 +226,13 @@ class SearchableSelect(Widget):
         self._options: list[tuple[str, str]] = []
         self._current_value: str = ""
         self._overlay: _DropdownOverlay | None = None
-        self._suppress_change: bool = False
+        self._search_active: bool = False
 
     def compose(self) -> ComposeResult:
-        yield Input(placeholder=self.prompt)
+        # Selecting on focus lets keyboard users replace the closed value with
+        # a search term in one keystroke, just like clicking to open it.
+        yield Input(placeholder=self.prompt, select_on_focus=True)
+        yield Label("▼", classes="dropdown-indicator")
 
     # ── Public API ──────────────────────────────────────────────────────────
 
@@ -210,7 +245,10 @@ class SearchableSelect(Widget):
             else:
                 self._options.append((str(opt), str(opt)))
         if self._overlay and self._overlay.is_attached:
-            self._overlay.update_options(self._options)
+            query = self.query_one(Input).value
+            filtered = self._get_filtered(query)
+            preferred = self._current_value if not query else None
+            self._overlay.update_options(filtered, preferred)
 
     @property
     def value(self) -> str:
@@ -219,14 +257,9 @@ class SearchableSelect(Widget):
     @value.setter
     def value(self, new_value: str) -> None:
         self._current_value = new_value
-        label = new_value
-        for l, v in self._options:
-            if v == new_value:
-                label = l
-                break
-        inp = self.query_one(Input)
-        with inp.prevent(Input.Changed):
-            inp.value = label
+        self._search_active = False
+        self._close_overlay()
+        self._restore_selected_label()
         self.post_message(self.Changed(new_value, self))
 
     def focus_input(self) -> None:
@@ -240,12 +273,47 @@ class SearchableSelect(Widget):
         t = term.lower()
         return [(l, v) for l, v in self._options if t in l.lower() or t in v.lower()]
 
+    def _selected_label(self) -> str:
+        """Return the display label for the committed value."""
+        for label, value in self._options:
+            if value == self._current_value:
+                return label
+        return self._current_value
+
+    def _restore_selected_label(self) -> None:
+        inp = self.query_one(Input)
+        with inp.prevent(Input.Changed):
+            inp.value = self._selected_label()
+        inp.placeholder = self.prompt
+        self.query_one(".dropdown-indicator", Label).update("▼")
+
+    def _begin_search(self, initial_query: str = "") -> None:
+        """Enter search mode without changing the committed value."""
+        if self._search_active or not self._options:
+            return
+        self._search_active = True
+        inp = self.query_one(Input)
+        with inp.prevent(Input.Changed):
+            inp.value = initial_query
+        inp.placeholder = "Type to filter..."
+        self.query_one(".dropdown-indicator", Label).update("▲")
+        self._open_overlay(initial_query)
+        inp.focus()
+
+    def _cancel_search(self) -> None:
+        """Discard the temporary query and return to the committed selection."""
+        if not self._search_active:
+            return
+        self._search_active = False
+        self._close_overlay()
+        self._restore_selected_label()
+
     def _open_overlay(self, filter_term: str = "") -> None:
         if self._overlay and self._overlay.is_attached:
             return
         if not self._options:
             return
-        filtered = self._get_filtered(filter_term) or self._options
+        filtered = self._get_filtered(filter_term)
         inp = self.query_one(Input)
         try:
             region = inp.screen_region
@@ -257,6 +325,7 @@ class SearchableSelect(Widget):
             x=region.x,
             y=region.y + region.height,
             width=region.width,
+            highlighted_value=self._current_value if not filter_term else None,
         )
         self._overlay = overlay
         self.app.screen.mount(overlay)
@@ -269,9 +338,12 @@ class SearchableSelect(Widget):
     def _on_option_selected(self, value: str, label: str) -> None:
         """Called by the overlay when user selects an option (keyboard or mouse)."""
         self._current_value = value
+        self._search_active = False
         inp = self.query_one(Input)
         with inp.prevent(Input.Changed):
             inp.value = label
+        inp.placeholder = self.prompt
+        self.query_one(".dropdown-indicator", Label).update("▼")
         self._close_overlay()
         self.post_message(self.Changed(value, self))
 
@@ -279,34 +351,32 @@ class SearchableSelect(Widget):
 
     @on(Input.Changed)
     def _on_input_changed(self, event: Input.Changed) -> None:
-        if self._suppress_change:
-            self._suppress_change = False
+        if not self._search_active:
+            # Space is an activation key for a closed combobox, not a useful
+            # first filter term.
+            initial_query = "" if event.value.isspace() else event.value
+            self._begin_search(initial_query)
             return
-        term = event.value.lower()
+        term = event.value
         if self._overlay and self._overlay.is_attached:
-            filtered = self._get_filtered(term) or self._options
+            filtered = self._get_filtered(term)
             self._overlay.update_options(filtered)
         else:
             # Open overlay as soon as user starts typing
             self._open_overlay(term)
-        if not event.value:
-            self._current_value = ""
-            self.post_message(self.Changed("", self))
 
     @on(events.Click)
     def _on_widget_clicked(self, event: events.Click) -> None:
-        """Open the full dropdown when clicking the widget."""
-        inp = self.query_one(Input)
-        self._open_overlay(inp.value.lower())
-        inp.focus()
+        """Start a fresh search when clicking the widget."""
+        self._begin_search()
 
     def on_key(self, event: events.Key) -> None:
         """Handle keyboard navigation while overlay is open."""
-        if event.key in ("down", "up") and not (self._overlay and self._overlay.is_attached):
-            # ↓/↑ with no overlay → open it
-            self._open_overlay(self.query_one(Input).value.lower())
-            event.prevent_default()
-            event.stop()
+        if not self._search_active:
+            if event.key in ("enter", "space", "down", "up"):
+                self._begin_search()
+                event.prevent_default()
+                event.stop()
             return
 
         if not (self._overlay and self._overlay.is_attached):
@@ -327,9 +397,9 @@ class SearchableSelect(Widget):
         elif event.key == "escape":
             event.prevent_default()
             event.stop()
-            self._close_overlay()
+            self._cancel_search()
 
     def on_descendant_blur(self, event: events.DescendantBlur) -> None:
-        """Close overlay when the Input loses focus (tab / click elsewhere)."""
+        """Cancel search when the Input loses focus (tab / click elsewhere)."""
         # Small delay so a mouse-click on the overlay fires its OptionSelected first
-        self.set_timer(0.15, self._close_overlay)
+        self.set_timer(0.15, self._cancel_search)
