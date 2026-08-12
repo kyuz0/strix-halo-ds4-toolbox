@@ -250,6 +250,10 @@ class SearchableSelect(Widget):
             preferred = self._current_value if not query else None
             self._overlay.update_options(filtered, preferred)
 
+    def has_option(self, value: str) -> bool:
+        """True if `value` is one of the current option values."""
+        return any(v == value for _, v in self._options)
+
     @property
     def value(self) -> str:
         return self._current_value
