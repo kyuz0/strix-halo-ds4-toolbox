@@ -339,9 +339,10 @@ class Ds4CockpitApp(App):
         if not getattr(self, "_server_restore_armed", False):
             self._server_restore_armed = True
             saved = load_server_settings()
-            if saved.get("model") and sel_model.has_option(saved["model"]):
+            if isinstance(saved, dict) and saved:
                 self._pending_server_restore = saved
-                target = saved["model"]
+                if saved.get("model") and sel_model.has_option(saved["model"]):
+                    target = saved["model"]
         if model_opts:
             sel_model.value = target
 
