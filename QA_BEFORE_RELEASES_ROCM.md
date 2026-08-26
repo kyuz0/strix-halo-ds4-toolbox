@@ -14,20 +14,17 @@ worker/coordinator pair.
 | Single host / coordinator | `fw2` | `192.168.100.2` | `/home/kyuz0/ds4` |
 | Worker | `fw1` | `192.168.100.1` | `/mnt/storage/ds4` |
 
-Toolbox tags are not interchangeable builds of one DS4 checkout. Each
-Dockerfile selects its own repository and mutable branch:
+The standard ROCm toolbox is the gfx1151 release image and tracks the
+`kyuz0/ds4` `main` branch:
 
 | Toolbox tag | Dockerfile | DS4 repository | Branch | Target |
 | --- | --- | --- | --- | --- |
-| `rocm-7.14` | `Dockerfile.rocm-7.14` | `kyuz0/ds4` | `main` | Normal gfx1151 release |
-| `multi-node-rocm-7.14` | `Dockerfile.multi-node-rocm-7.14` | `kyuz0/ds4` | `rocm-multi-node` | DeepSeek distributed |
-| `glm-rocm-7.14` | `Dockerfile.glm-rocm-7.14` | `kyuz0/ds4` | `fix/rocm-distributed-glm` | GLM ROCm and GLM distributed |
+| `rocm-7.14` | `Dockerfile.rocm-7.14` | `kyuz0/ds4` | `main` | gfx1151, including DeepSeek and GLM distributed inference |
 | `gfx1201-rocm-7.14` | `Dockerfile.gfx1201-rocm-7.14` | `kyuz0/ds4` | `gfx1201-discrete-gpu` | gfx1201 only; outside this matrix |
 | `therock-nightly` | `Dockerfile.therock-nightly` | `antirez/ds4` | `main` | Nightly ROCm; outside this matrix |
 
-Check the Dockerfiles before every release. Do not infer an image's source from
-its name or assume that two tags contain the same DS4 commit. The workflow
-clones the branch tip during the build; record that tip before dispatching it.
+Check the Dockerfile before every release. The workflow clones the branch tip
+during the build; record that tip before dispatching it.
 
 For a toolbox release, use each model's image in the matrix below. For a
 single DS4 code-change comparison, prefer one capable image built from that
@@ -38,12 +35,12 @@ cross-image result as a path-only comparison.
 
 | ID | Model | Mode | Toolbox tag | Hosts | Required settings |
 | --- | --- | --- | --- | --- | --- |
-| `DS-IQ2-R` | `DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix.gguf` | Resident | `rocm-7.14` | `fw2` | No `--ssd-streaming` |
+| `DS-IQ2-R` | `DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix-0731.gguf` | Resident | `rocm-7.14` | `fw2` | No `--ssd-streaming` |
 | `DS-IQ2-S` | Same DeepSeek IQ2 | SSD streaming | `rocm-7.14` | `fw2` | `--ssd-streaming` |
-| `GLM-S` | `GLM-5.2-UD-IQ2_XXS_RoutedIQ2XXS_blk78Q2K.gguf` | SSD streaming | `glm-rocm-7.14` | `fw2` | `--ssd-streaming` |
-| `DS-Q4-S` | `DeepSeek-V4-Flash-Q4KExperts-F16HC-F16Compressor-F16Indexer-Q8Attn-Q8Shared-Q8Out-chat-v2-imatrix.gguf` | SSD streaming | `multi-node-rocm-7.14` | `fw2` | `--ssd-streaming` |
-| `DS-Q4-D` | Same DeepSeek Q4 | Distributed | `multi-node-rocm-7.14` | `fw2` + `fw1` | `0:21 / 22:output`, chunk `4096`, window `2` |
-| `GLM-D` | Same GLM IQ2 | Distributed | `glm-rocm-7.14` | `fw2` + `fw1` | `0:37 / 38:output`, chunk `256`, window `2` |
+| `GLM-S` | `GLM-5.2-UD-IQ2_XXS_RoutedIQ2XXS_blk78Q2K.gguf` | SSD streaming | `rocm-7.14` | `fw2` | `--ssd-streaming` |
+| `DS-Q4-S` | `DeepSeek-V4-Flash-Q4KExperts-F16HC-F16Compressor-F16Indexer-Q8Attn-Q8Shared-Q8Out-chat-v2-imatrix.gguf` | SSD streaming | `rocm-7.14` | `fw2` | `--ssd-streaming` |
+| `DS-Q4-D` | Same DeepSeek Q4 | Distributed | `rocm-7.14` | `fw2` + `fw1` | `0:21 / 22:output`, chunk `4096`, window `2` |
+| `GLM-D` | Same GLM IQ2 | Distributed | `rocm-7.14` | `fw2` + `fw1` | `0:37 / 38:output`, chunk `256`, window `2` |
 
 ## 1. Build and deploy
 
@@ -51,21 +48,19 @@ For each Dockerfile in scope, inspect and record `ARG REPO` and `ARG BRANCH`,
 then resolve the exact branch tip:
 
 ```sh
-rg '^ARG (REPO|BRANCH)=' toolboxes/Dockerfile.*
+rg '^ARG (REPO|BRANCH)=' toolboxes/Dockerfile.rocm-7.14
 
 git ls-remote https://github.com/kyuz0/ds4.git refs/heads/main
-git ls-remote https://github.com/kyuz0/ds4.git refs/heads/rocm-multi-node
-git ls-remote https://github.com/kyuz0/ds4.git refs/heads/fix/rocm-distributed-glm
 ```
 
-Run the source repository's normal tests and whitespace gate at each recorded
-commit. Then dispatch the three gfx1151 images:
+Run the source repository's normal tests and whitespace gate at the recorded
+commit. Then dispatch the gfx1151 image:
 
 ```sh
 gh workflow run build_and_publish.yml \
   --repo kyuz0/strix-halo-ds4-toolbox \
   --ref main \
-  -f backends=rocm-7.14,multi-node-rocm-7.14,glm-rocm-7.14
+  -f backends=rocm-7.14
 
 gh run list \
   --repo kyuz0/strix-halo-ds4-toolbox \
@@ -81,13 +76,11 @@ Pull the required images and record their IDs. For every distributed run, the
 worker and coordinator IDs for that tag must match:
 
 ```sh
-for TAG in rocm-7.14 multi-node-rocm-7.14 glm-rocm-7.14; do
-  IMAGE="docker.io/kyuz0/strix-halo-ds4-toolbox:${TAG}"
-  ssh fw1 podman pull "$IMAGE"
-  ssh fw2 podman pull "$IMAGE"
-  ssh fw1 podman image inspect "$IMAGE" --format '{{.Id}} {{.Created}}'
-  ssh fw2 podman image inspect "$IMAGE" --format '{{.Id}} {{.Created}}'
-done
+IMAGE=docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-7.14
+ssh fw1 podman pull "$IMAGE"
+ssh fw2 podman pull "$IMAGE"
+ssh fw1 podman image inspect "$IMAGE" --format '{{.Id}} {{.Created}}'
+ssh fw2 podman image inspect "$IMAGE" --format '{{.Id}} {{.Created}}'
 ```
 
 Record model hashes. The copies used by both nodes must match:
@@ -109,8 +102,6 @@ Run this on `fw2`:
 
 ```sh
 ROCM_IMAGE=docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-7.14
-MULTI_IMAGE=docker.io/kyuz0/strix-halo-ds4-toolbox:multi-node-rocm-7.14
-GLM_IMAGE=docker.io/kyuz0/strix-halo-ds4-toolbox:glm-rocm-7.14
 mkdir -p /tmp/ds4-rocm-qa
 mkdir -p /tmp/ds4-rocm-qa/{DS-IQ2-R,DS-IQ2-S,GLM-S,DS-Q4-S,DS-Q4-D,GLM-D}-logits
 
@@ -135,8 +126,6 @@ Run this on `fw1`:
 
 ```sh
 ROCM_IMAGE=docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-7.14
-MULTI_IMAGE=docker.io/kyuz0/strix-halo-ds4-toolbox:multi-node-rocm-7.14
-GLM_IMAGE=docker.io/kyuz0/strix-halo-ds4-toolbox:glm-rocm-7.14
 mkdir -p /tmp/ds4-rocm-qa
 
 run_fw1() {
@@ -192,8 +181,8 @@ Use these values:
 | --- | --- | --- | --- |
 | `DS-IQ2-R` | `$ROCM_IMAGE` | DeepSeek IQ2 filename above | `()` |
 | `DS-IQ2-S` | `$ROCM_IMAGE` | DeepSeek IQ2 filename above | `(--ssd-streaming)` |
-| `GLM-S` | `$GLM_IMAGE` | GLM filename above | `(--ssd-streaming)` |
-| `DS-Q4-S` | `$MULTI_IMAGE` | DeepSeek Q4 filename above | `(--ssd-streaming)` |
+| `GLM-S` | `$ROCM_IMAGE` | GLM filename above | `(--ssd-streaming)` |
+| `DS-Q4-S` | `$ROCM_IMAGE` | DeepSeek Q4 filename above | `(--ssd-streaming)` |
 
 For every run require:
 
@@ -235,7 +224,7 @@ not a pass.
 
 ## 4. Distributed DeepSeek Q4
 
-Set `IMAGE=$MULTI_IMAGE` on both hosts.
+Set `IMAGE=$ROCM_IMAGE` on both hosts.
 
 Start the worker on `fw1`:
 
@@ -284,7 +273,7 @@ Stop the worker after the benchmark.
 
 ## 5. Distributed GLM 5.2
 
-Set `IMAGE=$GLM_IMAGE` on both hosts.
+Set `IMAGE=$ROCM_IMAGE` on both hosts.
 
 Start the worker on `fw1`:
 
@@ -452,7 +441,7 @@ Last accepted GLM IQ2 comparison:
 ## 7. Cockpit gate
 
 In `strix-halo-ds4-toolbox/ds4-strix-halo-cockpit`, select the
-`glm-rocm-7.14` toolbox and inspect the final command before starting it.
+`rocm-7.14` toolbox and inspect the final command before starting it.
 
 | Selection | Expected command settings |
 | --- | --- |

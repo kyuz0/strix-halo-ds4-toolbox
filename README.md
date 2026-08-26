@@ -281,7 +281,7 @@ Refresh the local toolbox to the latest Docker Hub build:
 
 The ROCm fork supports distributing the model across multiple nodes using pipeline parallelism (layer slicing). You can specify exactly which layers evaluate on which machine, designating one node as the `coordinator` and the others as `worker`s.
 
-To run multi-node inference, you must use the `multi-node-rocm-7.14` container image (`ds4-multi-node-rocm-7.14` local toolbox), which contains the necessary patches for distributed networking and coordination.
+Multi-node inference is included in the standard `rocm-7.14` image (`ds4-rocm-7.14` local toolbox).
 
 ### 1. Start the Worker (evaluates layers 22 through output)
 Run the server on the worker node. Set the context size (e.g. `--ctx 262144` for 256k) and point it to the coordinator's IP and port:

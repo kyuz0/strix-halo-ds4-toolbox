@@ -5,7 +5,7 @@ on:
     inputs:
       backends:
         description: >
-          Comma-separated backends to build (e.g. "rocm-7.14,multi-node-rocm-7.14,glm-rocm-7.14,gfx1201-rocm-7.14,therock-nightly").
+          Comma-separated backends to build (e.g. "rocm-7.14,gfx1201-rocm-7.14,therock-nightly").
           Use "all" to build everything.
         required: false
         default: all
@@ -28,7 +28,7 @@ jobs:
           IN='${{ inputs.backends }}'
 
           if [[ "$IN" == "all" || -z "$IN" ]]; then
-            JSON='["rocm-7.14","multi-node-rocm-7.14","glm-rocm-7.14","gfx1201-rocm-7.14","therock-nightly"]'
+            JSON='["rocm-7.14","gfx1201-rocm-7.14","therock-nightly"]'
           else
             # Remove spaces and build JSON array from comma list
             IN_CLEAN=$(echo "$IN" | tr -d '[:space:]')
