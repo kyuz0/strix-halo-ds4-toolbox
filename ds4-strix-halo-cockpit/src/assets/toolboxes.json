@@ -5,9 +5,9 @@
       "name": "Official Toolboxes",
       "toolboxes": [
         {
-          "name": "ds4-rocm-7.14",
-          "tag": "rocm-7.14",
-          "description": "antirez upstream — Recommended for most users",
+          "name": "ds4-rocm-10.0",
+          "tag": "rocm-10.0",
+          "description": "ROCm 10.0 MMQ kernel lab — Recommended for most users",
           "engine_args": [
             "--device",
             "/dev/dri",

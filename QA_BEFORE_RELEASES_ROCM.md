@@ -19,7 +19,7 @@ The standard ROCm toolbox is the gfx1151 release image and tracks the
 
 | Toolbox tag | Dockerfile | DS4 repository | Branch | Target |
 | --- | --- | --- | --- | --- |
-| `rocm-7.14` | `Dockerfile.rocm-7.14` | `kyuz0/ds4` | `main` | gfx1151, including DeepSeek and GLM distributed inference |
+| `rocm-10.0` | `Dockerfile.rocm-10.0` | `kyuz0/ds4` | `perf/rocm-gfx1151-mmq-kernel-lab` | gfx1151, including DeepSeek and GLM distributed inference |
 | `gfx1201-rocm-7.14` | `Dockerfile.gfx1201-rocm-7.14` | `kyuz0/ds4` | `gfx1201-discrete-gpu` | gfx1201 only; outside this matrix |
 | `therock-nightly` | `Dockerfile.therock-nightly` | `antirez/ds4` | `main` | Nightly ROCm; outside this matrix |
 
@@ -35,12 +35,12 @@ cross-image result as a path-only comparison.
 
 | ID | Model | Mode | Toolbox tag | Hosts | Required settings |
 | --- | --- | --- | --- | --- | --- |
-| `DS-IQ2-R` | `DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix-0731.gguf` | Resident | `rocm-7.14` | `fw2` | No `--ssd-streaming` |
-| `DS-IQ2-S` | Same DeepSeek IQ2 | SSD streaming | `rocm-7.14` | `fw2` | `--ssd-streaming` |
-| `GLM-S` | `GLM-5.2-UD-IQ2_XXS_RoutedIQ2XXS_blk78Q2K.gguf` | SSD streaming | `rocm-7.14` | `fw2` | `--ssd-streaming` |
-| `DS-Q4-S` | `DeepSeek-V4-Flash-Q4KExperts-F16HC-F16Compressor-F16Indexer-Q8Attn-Q8Shared-Q8Out-chat-v2-imatrix.gguf` | SSD streaming | `rocm-7.14` | `fw2` | `--ssd-streaming` |
-| `DS-Q4-D` | Same DeepSeek Q4 | Distributed | `rocm-7.14` | `fw2` + `fw1` | `0:21 / 22:output`, chunk `4096`, window `2` |
-| `GLM-D` | Same GLM IQ2 | Distributed | `rocm-7.14` | `fw2` + `fw1` | `0:37 / 38:output`, chunk `256`, window `2` |
+| `DS-IQ2-R` | `DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix-0731.gguf` | Resident | `rocm-10.0` | `fw2` | No `--ssd-streaming` |
+| `DS-IQ2-S` | Same DeepSeek IQ2 | SSD streaming | `rocm-10.0` | `fw2` | `--ssd-streaming` |
+| `GLM-S` | `GLM-5.2-UD-IQ2_XXS_RoutedIQ2XXS_blk78Q2K.gguf` | SSD streaming | `rocm-10.0` | `fw2` | `--ssd-streaming` |
+| `DS-Q4-S` | `DeepSeek-V4-Flash-Q4KExperts-F16HC-F16Compressor-F16Indexer-Q8Attn-Q8Shared-Q8Out-chat-v2-imatrix.gguf` | SSD streaming | `rocm-10.0` | `fw2` | `--ssd-streaming` |
+| `DS-Q4-D` | Same DeepSeek Q4 | Distributed | `rocm-10.0` | `fw2` + `fw1` | `0:21 / 22:output`, chunk `4096`, window `2` |
+| `GLM-D` | Same GLM IQ2 | Distributed | `rocm-10.0` | `fw2` + `fw1` | `0:37 / 38:output`, chunk `256`, window `2` |
 
 ## 1. Build and deploy
 
@@ -48,9 +48,9 @@ For each Dockerfile in scope, inspect and record `ARG REPO` and `ARG BRANCH`,
 then resolve the exact branch tip:
 
 ```sh
-rg '^ARG (REPO|BRANCH)=' toolboxes/Dockerfile.rocm-7.14
+rg '^ARG (REPO|BRANCH)=' toolboxes/Dockerfile.rocm-10.0
 
-git ls-remote https://github.com/kyuz0/ds4.git refs/heads/main
+git ls-remote https://github.com/kyuz0/ds4.git refs/heads/perf/rocm-gfx1151-mmq-kernel-lab
 ```
 
 Run the source repository's normal tests and whitespace gate at the recorded
@@ -60,7 +60,7 @@ commit. Then dispatch the gfx1151 image:
 gh workflow run build_and_publish.yml \
   --repo kyuz0/strix-halo-ds4-toolbox \
   --ref main \
-  -f backends=rocm-7.14
+  -f backends=rocm-10.0
 
 gh run list \
   --repo kyuz0/strix-halo-ds4-toolbox \
@@ -76,7 +76,7 @@ Pull the required images and record their IDs. For every distributed run, the
 worker and coordinator IDs for that tag must match:
 
 ```sh
-IMAGE=docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-7.14
+IMAGE=docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-10.0
 ssh fw1 podman pull "$IMAGE"
 ssh fw2 podman pull "$IMAGE"
 ssh fw1 podman image inspect "$IMAGE" --format '{{.Id}} {{.Created}}'
@@ -101,7 +101,7 @@ ssh fw1 sha256sum \
 Run this on `fw2`:
 
 ```sh
-ROCM_IMAGE=docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-7.14
+ROCM_IMAGE=docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-10.0
 mkdir -p /tmp/ds4-rocm-qa
 mkdir -p /tmp/ds4-rocm-qa/{DS-IQ2-R,DS-IQ2-S,GLM-S,DS-Q4-S,DS-Q4-D,GLM-D}-logits
 
@@ -125,7 +125,7 @@ run_fw2() {
 Run this on `fw1`:
 
 ```sh
-ROCM_IMAGE=docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-7.14
+ROCM_IMAGE=docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-10.0
 mkdir -p /tmp/ds4-rocm-qa
 
 run_fw1() {
@@ -441,7 +441,7 @@ Last accepted GLM IQ2 comparison:
 ## 7. Cockpit gate
 
 In `strix-halo-ds4-toolbox/ds4-strix-halo-cockpit`, select the
-`rocm-7.14` toolbox and inspect the final command before starting it.
+`rocm-10.0` toolbox and inspect the final command before starting it.
 
 | Selection | Expected command settings |
 | --- | --- |

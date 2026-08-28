@@ -2,12 +2,13 @@
 
 A pre-built container image ("toolbox") for running **[ds4](https://github.com/antirez/ds4)** — antirez's DeepSeek V4 Flash inference engine — on **AMD Ryzen AI Max "Strix Halo"** integrated GPUs (`gfx1151`).
 
-The `rocm-7.14` container is based on the `main` branch of
-[`kyuz0/ds4`](https://github.com/kyuz0/ds4) and compiled against **ROCm 7.14
-(stable)**. It exposes three compiled binaries: `ds4`, `ds4-server`, and
-`ds4-bench`.
+The `rocm-10.0` container is based on the
+[`perf/rocm-gfx1151-mmq-kernel-lab`](https://github.com/kyuz0/ds4/tree/perf/rocm-gfx1151-mmq-kernel-lab)
+branch of [`kyuz0/ds4`](https://github.com/kyuz0/ds4) and compiled against
+**ROCm 10.0 (stable)**. It exposes three compiled binaries: `ds4`,
+`ds4-server`, and `ds4-bench`.
 
-* **Docker Hub Image:** [kyuz0/strix-halo-ds4-toolbox:rocm-7.14](https://hub.docker.com/r/kyuz0/strix-halo-ds4-toolbox/tags)
+* **Docker Hub Image:** [kyuz0/strix-halo-ds4-toolbox:rocm-10.0](https://hub.docker.com/r/kyuz0/strix-halo-ds4-toolbox/tags)
 * **Target Container System:** Toolbx (standard developer container system on Fedora) or Distrobox (works on Ubuntu, Debian, Arch, openSUSE, etc.)
 
 ---
@@ -50,16 +51,16 @@ ds4-cockpit
 **Ubuntu/Debian:** replace `toolbox` with `distrobox`.
 
 **Available Images:**
-- `docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-7.14` (Tracks `kyuz0/ds4:main`)
+- `docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-10.0` (Tracks `kyuz0/ds4:perf/rocm-gfx1151-mmq-kernel-lab`)
 - `docker.io/kyuz0/strix-halo-ds4-toolbox:therock-nightly` (Tracks the latest TheRock multi-arch `gfx1151` nightly and `antirez/ds4:main`)
 
 ```sh
-toolbox create ds4-rocm-7.14 \
-  --image docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-7.14 \
+toolbox create ds4-rocm-10.0 \
+  --image docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-10.0 \
   -- --device /dev/dri --device /dev/kfd \
   --group-add video --group-add render --group-add sudo --security-opt seccomp=unconfined
 
-toolbox enter ds4-rocm-7.14
+toolbox enter ds4-rocm-10.0
 ```
 
 > [!TIP]
@@ -141,7 +142,7 @@ docker run --rm -it -p 8000:8000 \
   --group-add video --group-add render \
   --ipc=host --cap-add=SYS_PTRACE --security-opt seccomp=unconfined \
   -v ~/ds4:/models:ro \
-  kyuz0/strix-halo-ds4-toolbox:rocm-7.14 \
+  kyuz0/strix-halo-ds4-toolbox:rocm-10.0 \
   ds4-server -m /models/DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix.gguf --ctx 124000
 ```
 *(Note: You can replace `docker` with `podman`. If you encounter permission issues when mounting volumes on systems with SELinux (like Fedora/RHEL), add `z` to each volume option, for example `-v ~/ds4:/models:ro,z`.)*
@@ -229,7 +230,7 @@ docker run --rm -it -p 8000:8000 \
   --ipc=host --cap-add=SYS_PTRACE --security-opt seccomp=unconfined \
   -v ~/ds4:/models:ro \
   -v ~/.cache/ds4-kv:/var/cache/ds4-kv \
-  kyuz0/strix-halo-ds4-toolbox:rocm-7.14 \
+  kyuz0/strix-halo-ds4-toolbox:rocm-10.0 \
   ds4-server -m /models/DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix.gguf \
     --ctx 124000 \
     --kv-disk-dir /var/cache/ds4-kv \
@@ -272,7 +273,7 @@ ds4-server -m ~/ds4/DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-
 Refresh the local toolbox to the latest Docker Hub build:
 
 ```sh
-./refresh-toolboxes.sh ds4-rocm-7.14
+./refresh-toolboxes.sh ds4-rocm-10.0
 ```
 
 ---
@@ -281,7 +282,7 @@ Refresh the local toolbox to the latest Docker Hub build:
 
 The ROCm fork supports distributing the model across multiple nodes using pipeline parallelism (layer slicing). You can specify exactly which layers evaluate on which machine, designating one node as the `coordinator` and the others as `worker`s.
 
-Multi-node inference is included in the standard `rocm-7.14` image (`ds4-rocm-7.14` local toolbox).
+Multi-node inference is included in the standard `rocm-10.0` image (`ds4-rocm-10.0` local toolbox).
 
 ### 1. Start the Worker (evaluates layers 22 through output)
 Run the server on the worker node. Set the context size (e.g. `--ctx 262144` for 256k) and point it to the coordinator's IP and port:
@@ -354,8 +355,8 @@ With 128 GB RAM running the IQ2_XXS imatrix model (~81 GB), a context of 100k–
 ## Building Locally
 
 ```bash
-# ROCm 7.14 (stable)
-docker build -t ds4-rocm-7.14 -f toolboxes/Dockerfile.rocm-7.14 toolboxes/
+# ROCm 10.0 (stable)
+docker build -t ds4-rocm-10.0 -f toolboxes/Dockerfile.rocm-10.0 toolboxes/
 ```
 
 ---

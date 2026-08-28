@@ -5,7 +5,7 @@ set -e
 # List of all known toolboxes and their configurations
 declare -A TOOLBOXES
 
-TOOLBOXES["ds4-rocm-7.14"]="docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-7.14 --device /dev/dri --device /dev/kfd --group-add video --group-add render --group-add sudo --security-opt seccomp=unconfined"
+TOOLBOXES["ds4-rocm-10.0"]="docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-10.0 --device /dev/dri --device /dev/kfd --group-add video --group-add render --group-add sudo --security-opt seccomp=unconfined"
 TOOLBOXES["ds4-gfx1201-rocm-7.14"]="docker.io/kyuz0/strix-halo-ds4-toolbox:gfx1201-rocm-7.14 --device /dev/dri --device /dev/kfd --group-add video --group-add render --group-add sudo --security-opt seccomp=unconfined"
 TOOLBOXES["ds4-therock-nightly"]="docker.io/kyuz0/strix-halo-ds4-toolbox:therock-nightly --device /dev/dri --device /dev/kfd --group-add video --group-add render --group-add sudo --security-opt seccomp=unconfined"
 

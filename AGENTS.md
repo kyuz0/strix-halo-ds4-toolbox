@@ -1,15 +1,15 @@
 # AI Agent Context: AMD Strix Halo ds4 Toolboxes
 
-**Primary Goal:** This project provides pre-built containers ("toolboxes") for running the `ds4` inference backend optimally on AMD Ryzen AI Max "Strix Halo" APUs. It handles the environment configuration for ROCm 7.14 and TheRock Nightlies, exposing compiled binary endpoints for LLM generation.
+**Primary Goal:** This project provides pre-built containers ("toolboxes") for running the `ds4` inference backend optimally on AMD Ryzen AI Max "Strix Halo" APUs. It handles the environment configuration for ROCm 10.0 and TheRock Nightlies, exposing compiled binary endpoints for LLM generation.
 
 ## Core Technologies
 *   **Containerization**: [Toolbx](https://containertoolbx.org/) (Fedora) or Distrobox (Ubuntu/Debian). Underneath, Docker/Podman is used to build base images.
-*   **Inference Engine**: [ds4](https://github.com/antirez/ds4) (Focusing on the `main` branch)
-*   **Hardware / Drivers**: AMD "Strix Halo" APUs (Gfx1151). Supports ROCm 7.14 and TheRock Nightlies.
+*   **Inference Engine**: [ds4](https://github.com/kyuz0/ds4) (Focusing on the `perf/rocm-gfx1151-mmq-kernel-lab` branch)
+*   **Hardware / Drivers**: AMD "Strix Halo" APUs (Gfx1151). Supports ROCm 10.0 and TheRock Nightlies.
 
 ## Repository Structure Overview
 *   `/toolboxes/`: Dockerfiles used to build the container images:
-    - `Dockerfile.rocm-7.14`: Configures AMD's stable ROCm 7.14 multi-arch Core SDK packages.
+    - `Dockerfile.rocm-10.0`: Configures AMD's stable ROCm 10.0 Core SDK packages.
     - `Dockerfile.therock-nightly`: Pulls the latest official TheRock multi-arch nightly tarball.
 *   `.github/workflows/`:
     - `build_and_publish.yml`: Automatically builds, runs smoke tests on compiled binaries (`ds4`, `ds4-server`, `ds4-bench`), and pushes tags to Docker Hub (`kyuz0/strix-halo-ds4-toolbox`).
