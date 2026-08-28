@@ -11,7 +11,7 @@ from src.toolbox_manager import get_all_toolboxes, detect_engines, get_os_toolbo
 from src.model_manager import scan_local_models, get_download_cmd, get_models_dir, save_models_dir, is_model_downloaded
 from src.server_runner import build_server_cmd
 from src.config import get_model_server_defaults, load_models
-from src.widgets import ConfirmModal, SelectModal, SearchableSelect
+from src.widgets import ConfirmModal, DeprecationModal, SelectModal, SearchableSelect
 import pyfiglet
 
 import importlib.metadata
@@ -73,7 +73,11 @@ class Ds4CockpitApp(App):
     .zone-title { color: #8C9EFF; text-style: bold; background: transparent; width: 100%; margin-bottom: 0; margin-top: 0; height: auto; }
     
     Input { margin: 0; height: 1; border: none; }
-    ConfirmModal, SelectModal { align: center middle; background: rgba(0, 0, 0, 0.7); }
+    ConfirmModal, DeprecationModal, SelectModal { align: center middle; background: rgba(0, 0, 0, 0.7); }
+    #deprecation_dialog { width: 90%; max-width: 100; height: auto; border: solid #fbc02d; background: #1e1e1e; padding: 1 2; }
+    #deprecation_title { text-align: center; text-style: bold; color: #fbc02d; margin-bottom: 1; width: 100%; }
+    #deprecation_message { text-align: center; height: auto; width: 100%; margin-bottom: 1; }
+    #deprecation_buttons { align: center middle; height: auto; }
     #confirm_dialog { width: 90%; max-width: 100; height: auto; border: solid #536DFE; background: #1e1e1e; padding: 1 2; }
     #select_dialog { width: 90%; max-width: 100; height: 80%; border: solid #536DFE; background: #1e1e1e; padding: 1 2; }
     #confirm_message, #select_title { text-align: center; text-style: bold; color: #8C9EFF; margin-bottom: 1; width: 100%; }
@@ -227,6 +231,7 @@ class Ds4CockpitApp(App):
         sel_role = self.query_one("#sel_role", SearchableSelect)
         sel_role.set_options([("Standalone", "Standalone"), ("Coordinator", "Coordinator"), ("Worker", "Worker")])
         sel_role.value = "Standalone"
+        self.push_screen(DeprecationModal())
 
     @work(thread=True)
     def check_app_updates(self):

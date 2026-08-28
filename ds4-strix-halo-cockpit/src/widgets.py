@@ -9,6 +9,42 @@ from textual.widget import Widget
 
 # ── Confirm / Select Modals ─────────────────────────────────────────────────
 
+class DeprecationModal(ModalScreen[None]):
+    """Startup notice directing users to the replacement project."""
+
+    INSTALL_COMMAND = (
+        "pipx install git+https://github.com/kyuz0/ai-toolbox-cockpit.git"
+    )
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="deprecation_dialog"):
+            yield Label("Project deprecated", id="deprecation_title")
+            yield Label(
+                "This project is deprecated in favour of AI Toolbox Cockpit.\n\n"
+                "[link=https://github.com/kyuz0/ai-toolbox-cockpit]"
+                "https://github.com/kyuz0/ai-toolbox-cockpit[/link]\n\n"
+                "Install it with pipx:\n"
+                f"[bold]{self.INSTALL_COMMAND}[/bold]",
+                id="deprecation_message",
+            )
+            with Horizontal(id="deprecation_buttons"):
+                yield Button(
+                    "Copy pipx command",
+                    variant="success",
+                    id="btn_copy_install_command",
+                )
+                yield Button("Close", variant="primary", id="btn_close_deprecation")
+
+    @on(Button.Pressed, "#btn_copy_install_command")
+    def on_copy_install_command(self, event: Button.Pressed) -> None:
+        self.app.copy_to_clipboard(self.INSTALL_COMMAND)
+        self.notify("pipx install command copied to the clipboard.", timeout=3)
+
+    @on(Button.Pressed, "#btn_close_deprecation")
+    def on_close(self, event: Button.Pressed) -> None:
+        self.dismiss(None)
+
+
 class ConfirmModal(ModalScreen[bool]):
     """A modal dialog that asks a Yes/No question."""
     def __init__(self, message: str, yes_text: str = "Yes", no_text: str = "No", id: str = None):
