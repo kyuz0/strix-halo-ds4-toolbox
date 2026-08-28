@@ -21,7 +21,7 @@ class DeprecationModal(ModalScreen[None]):
             yield Label("Project deprecated", id="deprecation_title")
             yield Label(
                 "This project is deprecated in favour of AI Toolbox Cockpit.\n\n"
-                "[link=https://github.com/kyuz0/ai-toolbox-cockpit]"
+                "[link=\"https://github.com/kyuz0/ai-toolbox-cockpit\"]"
                 "https://github.com/kyuz0/ai-toolbox-cockpit[/link]\n\n"
                 "Install it with pipx:\n"
                 f"[bold]{self.INSTALL_COMMAND}[/bold]",
