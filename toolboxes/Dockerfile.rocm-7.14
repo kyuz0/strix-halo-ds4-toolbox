@@ -56,7 +56,7 @@ EOF
 # Runtime components required by ds4's HIP backend.
 RUN microdnf -y --nodocs --setopt=install_weak_deps=0 \
   install \
-  bash ca-certificates libatomic libstdc++ libgcc libgomp sudo \
+  bash ca-certificates diffutils libatomic libstdc++ libgcc libgomp sudo \
   amdrocm-runtime7.14 amdrocm-blas7.14-gfx1151 \
   radeontop procps-ng \
   python3-pip \
