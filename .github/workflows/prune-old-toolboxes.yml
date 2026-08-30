@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       backends:
-        description: Comma-separated backends to prune (e.g. "rocm-7.14,therock-nightly") or "all"
+        description: Comma-separated backends to prune (e.g. "rocm-10.0,therock-nightly") or "all"
         default: all
       keep:
         description: Number of latest tags to keep
@@ -45,7 +45,7 @@ jobs:
           IN='${{ github.event.inputs.backends }}'
           if [[ "$IN" == "all" || -z "$IN" ]]; then
             # Retain retired prefixes until their immutable tags age out.
-            JSON='["rocm-7.2.4","multi-node-rocm-7.2.4","glm-rocm-7.2.4","gfx1201-rocm-7.2.4","rocm7-nightlies","rocm-7.14","multi-node-rocm-7.14","glm-rocm-7.14","gfx1201-rocm-7.14","therock-nightly"]'
+            JSON='["rocm-7.2.4","multi-node-rocm-7.2.4","glm-rocm-7.2.4","gfx1201-rocm-7.2.4","rocm7-nightlies","rocm-7.14","multi-node-rocm-7.14","glm-rocm-7.14","gfx1201-rocm-7.14","rocm-10.0","therock-nightly"]'
           else
             IN_CLEAN=$(echo "$IN" | tr -d '[:space:]')
             JSON='["'${IN_CLEAN//,/\",\"}'"]'
