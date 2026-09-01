@@ -30,9 +30,10 @@ ENV ROCM_PATH=/opt/rocm \
 # ds4
 WORKDIR /opt/ds4
 ARG REPO=https://github.com/kyuz0/ds4.git
-ARG BRANCH=main
+ARG BRANCH=perf/rocm-gfx1151-glm53-flash
 RUN git clone -b ${BRANCH} --single-branch ${REPO} . \
   && git clean -xdf \
+  && git log -1 --format='ds4 source: %H %s' \
   && make -j"$(nproc)" strix-halo ROCM_ARCH=gfx1151 \
      CFLAGS="-O3 -ffast-math -march=native -Wall -Wextra -std=c99 -D_GNU_SOURCE -fno-finite-math-only -fPIC" \
   && cp ds4 ds4-server ds4-bench ds4-eval ds4-agent download_model.sh /usr/local/bin/
