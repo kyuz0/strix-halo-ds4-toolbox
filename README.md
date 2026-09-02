@@ -2,6 +2,20 @@
 
 A pre-built container image ("toolbox") for running **[ds4](https://github.com/antirez/ds4)** — antirez's DeepSeek V4 Flash inference engine — on **AMD Ryzen AI Max "Strix Halo"** integrated GPUs (`gfx1151`).
 
+> [!IMPORTANT]
+> This repository is part of the **[Strix Halo AI Toolboxes](https://strix-halo-toolboxes.com/)** project. Follow the central guide for the recommended host setup, including unified-memory allocation and OS-specific configuration.
+
+## Recommended setup: AI Toolbox Cockpit
+
+[AI Toolbox Cockpit](https://github.com/kyuz0/ai-toolbox-cockpit) is the preferred way to install, launch, and update these containers. It provides tested, pre-configured profiles; supports Toolbx and Distrobox; and can run ds4 directly with Podman or Docker, so Toolbx is not required.
+
+```bash
+pipx install git+https://github.com/kyuz0/ai-toolbox-cockpit.git
+ai-toolbox-cockpit
+```
+
+The repository's [`refresh-toolboxes.sh`](refresh-toolboxes.sh) remains available for manual Toolbx refreshes. The Cockpit is recommended for normal installation and updates.
+
 The `rocm-10.0` container is based on the
 [`perf/rocm-gfx1151-mmq-kernel-lab`](https://github.com/kyuz0/ds4/tree/perf/rocm-gfx1151-mmq-kernel-lab)
 branch of [`kyuz0/ds4`](https://github.com/kyuz0/ds4) and compiled against
@@ -9,7 +23,12 @@ branch of [`kyuz0/ds4`](https://github.com/kyuz0/ds4) and compiled against
 `ds4-server`, and `ds4-bench`.
 
 * **Docker Hub Image:** [kyuz0/strix-halo-ds4-toolbox:rocm-10.0](https://hub.docker.com/r/kyuz0/strix-halo-ds4-toolbox/tags)
-* **Target Container System:** Toolbx (standard developer container system on Fedora) or Distrobox (works on Ubuntu, Debian, Arch, openSUSE, etc.)
+
+## Available images
+
+- `docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-10.0` — stable ROCm 10.0 build tracking `kyuz0/ds4:perf/rocm-gfx1151-mmq-kernel-lab`.
+- `docker.io/kyuz0/strix-halo-ds4-toolbox:therock-nightly` — experimental build tracking the latest TheRock multi-architecture `gfx1151` nightly and `antirez/ds4:main`.
+- `docker.io/kyuz0/strix-halo-ds4-toolbox:gfx1201-rocm-7.14` — ROCm 7.14 build for AMD Radeon AI PRO R9700 (`gfx1201`); it is not a Strix Halo image.
 
 ---
 
@@ -19,40 +38,13 @@ branch of [`kyuz0/ds4`](https://github.com/kyuz0/ds4) and compiled against
 
 ---
 
-## Host Configuration
+## Manual setup and usage
 
-Strix Halo uses unified memory. Add these kernel boot parameters to allocate up to 124 GiB for the iGPU:
-
-```
-amd_iommu=off amdgpu.gttsize=126976 ttm.pages_limit=32505856 ttm.page_pool_size=32505856
-```
-
-Apply with:
-```bash
-sudo grub2-mkconfig -o /boot/grub2/grub.cfg
-sudo reboot
-```
-
----
-
-## Quick Start
-
-### 0. (Optional) Install the ds4 Cockpit TUI
-
-For an interactive, terminal-based UI to manage toolboxes, download models, and run servers:
-
-```sh
-pipx install "git+https://github.com/kyuz0/strix-halo-ds4-toolbox.git#subdirectory=ds4-strix-halo-cockpit"
-ds4-cockpit
-```
+Use this section only if you prefer to manage the container and commands yourself. For the guided, tested path across Toolbx, Distrobox, Podman, and Docker, use [AI Toolbox Cockpit](#recommended-setup-ai-toolbox-cockpit).
 
 ### 1. Create and Enter the Toolbox
 
-**Ubuntu/Debian:** replace `toolbox` with `distrobox`.
-
-**Available Images:**
-- `docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-10.0` (Tracks `kyuz0/ds4:perf/rocm-gfx1151-mmq-kernel-lab`)
-- `docker.io/kyuz0/strix-halo-ds4-toolbox:therock-nightly` (Tracks the latest TheRock multi-arch `gfx1151` nightly and `antirez/ds4:main`)
+The example below uses Toolbx. See the [central Strix Halo setup guide](https://strix-halo-toolboxes.com/) for host preparation and other supported container engines.
 
 ```sh
 toolbox create ds4-rocm-10.0 \
@@ -187,8 +179,7 @@ The same option works with the interactive `ds4` CLI and `ds4-bench`. Try 2048 i
 4096 OOMs during startup or long-context prefill. Leave the option unset to use
 ds4's automatic model-specific default.
 
-The cockpit applies 2048 automatically when the curated ~97 GB hybrid model is
-selected, while keeping the field editable. Other models remain on Auto.
+AI Toolbox Cockpit applies 2048 automatically when the curated ~97 GB hybrid model is selected, while keeping the field editable. Other models remain on Auto.
 
 ### KV Disk Cache (Optional)
 
@@ -238,8 +229,7 @@ docker run --rm -it -p 8000:8000 \
 ```
 
 > [!NOTE]
-> The cockpit performs this host-directory mount automatically when its KV Disk
-> Cache switch is enabled.
+> AI Toolbox Cockpit performs this host-directory mount automatically when its KV Disk Cache switch is enabled.
 
 ### 5. Benchmarking
 
@@ -270,7 +260,7 @@ ds4-server -m ~/ds4/DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-
 
 ### 6. Keep Updated
 
-Refresh the local toolbox to the latest Docker Hub build:
+AI Toolbox Cockpit is the recommended update path. If you created the Toolbx container manually, refresh it to the latest Docker Hub build with:
 
 ```sh
 ./refresh-toolboxes.sh ds4-rocm-10.0
@@ -358,13 +348,3 @@ With 128 GB RAM running the IQ2_XXS imatrix model (~81 GB), a context of 100k–
 # ROCm 10.0 (stable)
 docker build -t ds4-rocm-10.0 -f toolboxes/Dockerfile.rocm-10.0 toolboxes/
 ```
-
----
-
-## Stable Host Configuration
-
-| Component | Recommended |
-| :--- | :--- |
-| OS | Fedora 42/43, Ubuntu 24.04+ |
-| Kernel | 6.18.5+ |
-| Firmware | Avoid `linux-firmware-20251125` (breaks ROCm). Use `20260110`+. |
