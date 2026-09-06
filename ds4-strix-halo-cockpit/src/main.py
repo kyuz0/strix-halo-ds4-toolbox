@@ -1,4 +1,4 @@
-from textual.app import App, ComposeResult
+from textual.app import App, ComposeResult, SystemCommand
 from textual.theme import Theme
 from textual import on, events, work
 from textual.widgets import Header, Footer, TabbedContent, TabPane, Button, Static, Label, Input, DataTable, Collapsible, Switch
@@ -8,7 +8,7 @@ import subprocess
 from pathlib import Path
 
 from src.toolbox_manager import get_all_toolboxes, detect_engines, get_os_toolbox_cmd, get_remote_image_date, create_toolbox, delete_toolbox
-from src.model_manager import scan_local_models, get_download_cmd, get_models_dir, save_models_dir, is_model_downloaded
+from src.model_manager import scan_local_models, get_download_cmd, get_models_dir, save_models_dir, is_model_downloaded, load_server_settings, save_server_settings
 from src.server_runner import build_server_cmd
 from src.config import get_model_server_defaults, load_models
 from src.widgets import ConfirmModal, DeprecationModal, SelectModal, SearchableSelect
@@ -336,9 +336,21 @@ class Ds4CockpitApp(App):
                 mtp_opts.append((m["name"], m["path"]))
             
         sel_model.set_options(model_opts)
+
+        # On first population, prefer the last-used model so the saved server
+        # settings can be restored over the curated defaults (see
+        # _restore_server_settings). Later rescans keep the stock behavior.
+        target = model_opts[0][1] if model_opts else ""
+        if not getattr(self, "_server_restore_armed", False):
+            self._server_restore_armed = True
+            saved = load_server_settings()
+            if isinstance(saved, dict) and saved:
+                self._pending_server_restore = saved
+                if saved.get("model") and sel_model.has_option(saved["model"]):
+                    target = saved["model"]
         if model_opts:
-            sel_model.value = model_opts[0][1]
-            
+            sel_model.value = target
+
         sel_mtp.set_options(mtp_opts)
         sel_mtp.value = ""
 
@@ -414,6 +426,113 @@ class Ds4CockpitApp(App):
         model_path = self.query_one("#sel_model", SearchableSelect).value
         defaults = get_model_server_defaults(model_path)
         self._apply_server_role_defaults(event.value, defaults)
+
+        # The mount-time defaults cascade ends here (model Changed, then role
+        # Changed), so this is the earliest point where saved settings can be
+        # overlaid without the curated defaults clobbering them.
+        restore = getattr(self, "_pending_server_restore", None)
+        if restore:
+            saved_role = restore.get("role", "")
+            if saved_role and saved_role != event.value:
+                # Switch to the saved role; the overlay runs when that
+                # Changed event lands back in this handler.
+                self.query_one("#sel_role", SearchableSelect).value = saved_role
+            else:
+                self._pending_server_restore = None
+                self._restore_server_settings(restore)
+
+    def _collect_server_settings(self) -> dict:
+        """Read the raw Server Mode form values for persistence."""
+        return {
+            "engine": self.query_one("#sel_engine", SearchableSelect).value,
+            "image": self.query_one("#sel_image", SearchableSelect).value,
+            "model": self.query_one("#sel_model", SearchableSelect).value,
+            "ctx": self.query_one("#inp_ctx", Input).value,
+            "host": self.query_one("#inp_host", Input).value,
+            "port": self.query_one("#inp_port", Input).value,
+            "prefill_chunk": self.query_one("#inp_prefill_chunk", Input).value.strip(),
+            "kv_enabled": self.query_one("#switch_kv_disk", Switch).value,
+            "kv_dir": self.query_one("#inp_kv_dir", Input).value,
+            "kv_mb": self.query_one("#inp_kv_mb", Input).value,
+            "ssd_enabled": self.query_one("#switch_ssd_streaming", Switch).value,
+            "ssd_experts": self.query_one("#inp_ssd_experts", Input).value,
+            "ssd_full_layers": self.query_one("#inp_ssd_full_layers", Input).value,
+            "ssd_cold": self.query_one("#switch_ssd_cold", Switch).value,
+            "mtp_model": self.query_one("#sel_mtp_model", SearchableSelect).value,
+            "role": self.query_one("#sel_role", SearchableSelect).value,
+            "layers": self.query_one("#inp_layers", Input).value,
+            "peer_addr": self.query_one("#inp_peer_addr", Input).value,
+            "dist_prefill_chunk": self.query_one("#inp_dist_prefill_chunk", Input).value.strip(),
+            "dist_prefill_window": self.query_one("#inp_dist_prefill_window", Input).value.strip(),
+            "custom_args": self.query_one("#inp_custom_args", Input).value,
+        }
+
+    def get_system_commands(self, screen):
+        yield from super().get_system_commands(screen)
+        yield SystemCommand(
+            "Save server settings as default",
+            "Save the current Server Mode form; it is restored on the next launch",
+            self._command_save_server_settings,
+        )
+        yield SystemCommand(
+            "Clear saved server settings",
+            "Forget the saved Server Mode settings; next launch uses model defaults",
+            self._command_clear_server_settings,
+        )
+
+    def _command_save_server_settings(self) -> None:
+        if save_server_settings(self._collect_server_settings()):
+            self.notify("Server settings saved as default.")
+        else:
+            self.notify("Failed to save server settings.", severity="error")
+
+    def _command_clear_server_settings(self) -> None:
+        if save_server_settings({}):
+            self.notify("Saved server settings cleared.")
+        else:
+            self.notify("Failed to clear saved settings.", severity="error")
+
+    def _restore_server_settings(self, saved: dict) -> None:
+        """Overlay the last-used Server Mode settings onto the form."""
+        def set_input(widget_id: str, key: str):
+            if key in saved:
+                self.query_one(widget_id, Input).value = str(saved[key])
+
+        def set_switch(widget_id: str, key: str):
+            if key in saved:
+                self.query_one(widget_id, Switch).value = bool(saved[key])
+
+        def set_select(widget_id: str, key: str):
+            sel = self.query_one(widget_id, SearchableSelect)
+            if saved.get(key) and sel.has_option(saved[key]):
+                sel.value = saved[key]
+
+        set_select("#sel_engine", "engine")
+        set_select("#sel_image", "image")
+        set_input("#inp_ctx", "ctx")
+        set_input("#inp_prefill_chunk", "prefill_chunk")
+        set_input("#inp_host", "host")
+        set_input("#inp_port", "port")
+        set_switch("#switch_kv_disk", "kv_enabled")
+        set_input("#inp_kv_dir", "kv_dir")
+        set_input("#inp_kv_mb", "kv_mb")
+        set_switch("#switch_ssd_streaming", "ssd_enabled")
+        set_input("#inp_ssd_experts", "ssd_experts")
+        set_input("#inp_ssd_full_layers", "ssd_full_layers")
+        set_switch("#switch_ssd_cold", "ssd_cold")
+        set_input("#inp_layers", "layers")
+        set_input("#inp_peer_addr", "peer_addr")
+        set_input("#inp_dist_prefill_chunk", "dist_prefill_chunk")
+        set_input("#inp_dist_prefill_window", "dist_prefill_window")
+        set_input("#inp_custom_args", "custom_args")
+        # Restored last: selecting the MTP model re-syncs --mtp-draft in the
+        # custom args it may edit.
+        if "mtp_model" in saved:
+            sel_mtp = self.query_one("#sel_mtp_model", SearchableSelect)
+            if not saved["mtp_model"]:
+                sel_mtp.value = ""
+            elif sel_mtp.has_option(saved["mtp_model"]):
+                sel_mtp.value = saved["mtp_model"]
 
     @on(SearchableSelect.Changed, "#sel_model")
     def on_server_model_changed(self, event: SearchableSelect.Changed) -> None:
@@ -694,6 +813,8 @@ class Ds4CockpitApp(App):
                 int(dist_prefill_window) if role == "Coordinator" and dist_prefill_window else None
             )
             
+            save_server_settings(self._collect_server_settings())
+
             tb_config = {}
             if hasattr(self, "toolboxes_dict"):
                 for tb in self.toolboxes_dict.values():
