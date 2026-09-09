@@ -17,16 +17,19 @@ ai-toolbox-cockpit
 The repository's [`refresh-toolboxes.sh`](refresh-toolboxes.sh) remains available for manual Toolbx refreshes. The Cockpit is recommended for normal installation and updates.
 
 The `rocm-10.0` container is based on the
-[`perf/rocm-gfx1151-mmq-kernel-lab`](https://github.com/kyuz0/ds4/tree/perf/rocm-gfx1151-mmq-kernel-lab)
+[`perf/rocm-gfx1151-glm53-mtp-cache-only`](https://github.com/kyuz0/ds4/tree/perf/rocm-gfx1151-glm53-mtp-cache-only)
 branch of [`kyuz0/ds4`](https://github.com/kyuz0/ds4) and compiled against
 **ROCm 10.0 (stable)**. It exposes three compiled binaries: `ds4`,
 `ds4-server`, and `ds4-bench`.
+
+The build cherry-picks [`23991c0`](https://github.com/kyuz0/ds4/commit/23991c03a28112839619af886b9c44dc8bee9702)
+from `fix/raw-openai-completions-main` to preserve raw OpenAI Completions prompts.
 
 * **Docker Hub Image:** [kyuz0/strix-halo-ds4-toolbox:rocm-10.0](https://hub.docker.com/r/kyuz0/strix-halo-ds4-toolbox/tags)
 
 ## Available images
 
-- `docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-10.0` — stable ROCm 10.0 build tracking `kyuz0/ds4:perf/rocm-gfx1151-mmq-kernel-lab`.
+- `docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-10.0` — stable ROCm 10.0 build tracking `kyuz0/ds4:perf/rocm-gfx1151-glm53-mtp-cache-only` with the raw Completions fix above.
 - `docker.io/kyuz0/strix-halo-ds4-toolbox:therock-nightly` — experimental build tracking the latest TheRock multi-architecture `gfx1151` nightly and `antirez/ds4:main`.
 - `docker.io/kyuz0/strix-halo-ds4-toolbox:gfx1201-rocm-7.14` — ROCm 7.14 build for AMD Radeon AI PRO R9700 (`gfx1201`); it is not a Strix Halo image.
 
