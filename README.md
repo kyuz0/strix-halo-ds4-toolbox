@@ -29,6 +29,8 @@ from `fix/raw-openai-completions-main` to preserve raw OpenAI Completions prompt
 
 ## Available images
 
+- `docker.io/kyuz0/strix-halo-ds4-toolbox:ds4.1f-rocm10.0` — ROCm 10.0 build for Strix Halo (`gfx1151`) tracking [`antirez/ds4:main`](https://github.com/antirez/ds4/tree/main). Local toolbox name: `ds4.1f-rocm10.0`.
+
 - `docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-10.0` — stable ROCm 10.0 build tracking `kyuz0/ds4:perf/rocm-gfx1151-glm53-performance` with the raw Completions fix above.
 - `docker.io/kyuz0/strix-halo-ds4-toolbox:therock-nightly` — experimental build tracking the latest TheRock multi-architecture `gfx1151` nightly and `antirez/ds4:main`.
 - `docker.io/kyuz0/strix-halo-ds4-toolbox:gfx1201-rocm-7.14` — ROCm 7.14 build for AMD Radeon AI PRO R9700 (`gfx1201`); it is not a Strix Halo image.
@@ -351,3 +353,18 @@ With 128 GB RAM running the IQ2_XXS imatrix model (~81 GB), a context of 100k–
 # ROCm 10.0 (stable)
 docker build -t ds4-rocm-10.0 -f toolboxes/Dockerfile.rocm-10.0 toolboxes/
 ```
+
+Build the upstream ROCm 10.0 toolbox locally:
+
+```bash
+docker build -t ds4.1f-rocm10.0 -f toolboxes/Dockerfile.ds4.1f-rocm10.0 toolboxes/
+```
+
+Create or refresh it from the published image:
+
+```bash
+./refresh-toolboxes.sh ds4.1f-rocm10.0
+```
+
+To build and publish only this image in GitHub Actions, run
+`build_and_publish.yml` with `backends=ds4.1f-rocm10.0`.
