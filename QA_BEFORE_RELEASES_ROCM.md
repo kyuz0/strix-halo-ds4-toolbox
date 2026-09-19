@@ -15,11 +15,11 @@ worker/coordinator pair.
 | Worker | `fw1` | `192.168.100.1` | `/mnt/storage/ds4` |
 
 The standard ROCm toolbox is the gfx1151 release image and tracks the
-`kyuz0/ds4` `main` branch:
+`kyuz0/ds4` `main-gfx1151` branch:
 
 | Toolbox tag | Dockerfile | DS4 repository | Branch | Target |
 | --- | --- | --- | --- | --- |
-| `rocm-10.0` | `Dockerfile.rocm-10.0` | `kyuz0/ds4` | `perf/rocm-gfx1151-mmq-kernel-lab` | gfx1151, including DeepSeek and GLM distributed inference |
+| `rocm-10.0` | `Dockerfile.rocm-10.0` | `kyuz0/ds4` | `main-gfx1151` | gfx1151, including DeepSeek and GLM distributed inference |
 | `gfx1201-rocm-7.14` | `Dockerfile.gfx1201-rocm-7.14` | `kyuz0/ds4` | `gfx1201-discrete-gpu` | gfx1201 only; outside this matrix |
 | `therock-nightly` | `Dockerfile.therock-nightly` | `antirez/ds4` | `main` | Nightly ROCm; outside this matrix |
 
@@ -50,7 +50,7 @@ then resolve the exact branch tip:
 ```sh
 rg '^ARG (REPO|BRANCH)=' toolboxes/Dockerfile.rocm-10.0
 
-git ls-remote https://github.com/kyuz0/ds4.git refs/heads/perf/rocm-gfx1151-mmq-kernel-lab
+git ls-remote https://github.com/kyuz0/ds4.git refs/heads/main-gfx1151
 ```
 
 Run the source repository's normal tests and whitespace gate at the recorded

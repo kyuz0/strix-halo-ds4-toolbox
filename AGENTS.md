@@ -4,7 +4,7 @@
 
 ## Core Technologies
 *   **Containerization**: [Toolbx](https://containertoolbx.org/) (Fedora) or Distrobox (Ubuntu/Debian). Underneath, Docker/Podman is used to build base images.
-*   **Inference Engine**: [ds4](https://github.com/kyuz0/ds4) (Focusing on the `perf/rocm-gfx1151-mmq-kernel-lab` branch)
+*   **Inference Engine**: [ds4](https://github.com/kyuz0/ds4) (Focusing on the `main-gfx1151` branch)
 *   **Hardware / Drivers**: AMD "Strix Halo" APUs (Gfx1151). Supports ROCm 10.0 and TheRock Nightlies.
 
 ## Repository Structure Overview
