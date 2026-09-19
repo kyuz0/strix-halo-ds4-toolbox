@@ -311,6 +311,67 @@ ds4-bench \
 
 ---
 
+## RoCE (RDMA) Transport
+
+Applies to the `rocm-10.0` and `ds4.1f-rocm10.0` images only. The other images do not contain the verbs code path.
+
+**Packages.** The builder installs `rdma-core-devel` — ds4 compiles RoCE in only when `<infiniband/verbs.h>` is visible at build time — and the runtime installs `libibverbs` (library plus userspace providers) and `libibverbs-utils`. Nothing needs installing inside the container.
+
+**Container flags.** `refresh-toolboxes.sh` adds these automatically when the host exposes `/dev/infiniband`:
+
+```sh
+--device /dev/infiniband --ulimit memlock=-1
+```
+
+Under Podman the toolbox is created with `--group-add keep-groups`, so host supplementary GIDs pass through by number and reach `/dev/infiniband/uverbs*`. Docker keeps the named `video`/`render` groups.
+
+**Checks inside the container:**
+
+```sh
+ulimit -l        # locked-memory allowance; RoCE staging needs >= 16 MiB
+ibv_devices      # verbs devices visible to the container
+ibv_devinfo -v   # port must be ACTIVE, link layer Ethernet; lists GIDs
+```
+
+`ulimit -l` shows the *effective* limit. A rootless container cannot exceed the host user's allowance, so if this reads low the host user's memlock limit (user slice `LimitMEMLOCK` or `/etc/security/limits.conf`) has to be raised on the host — the container flag alone will not do it.
+
+**Two-machine run over RoCE, vision enabled on both peers.** Same engine revision, same GGUF, same `--ctx` on both hosts. Set on each host (`DEV`/`GID` are per-host):
+
+```sh
+MODEL=/absolute/path/DeepSeek-V4.1-Flash-Q2.gguf
+VISION=/absolute/path/DeepSeek-V4.1-Flash-Vision.gguf
+COORD=10.99.0.1   # coordinator address on the RoCE link
+CTX=16384
+DEV=rocep194s0    # this host's verbs device, from ibv_devices
+PORT=1
+GID=1             # this host's nonzero RoCE v2 GID index
+```
+
+Coordinator:
+
+```sh
+ds4-server --rocm -m "$MODEL" --ctx "$CTX" \
+  --tensor-parallel --role coordinator --listen "$COORD" 9911 \
+  --transport rdma --rdma-device "$DEV" --rdma-port "$PORT" --rdma-gid-index "$GID" \
+  --vision "$VISION" \
+  --batched-session 1 --host 127.0.0.1 --port 8080
+```
+
+Worker:
+
+```sh
+ds4 --rocm -m "$MODEL" --ctx "$CTX" \
+  --tensor-parallel --role worker --coordinator "$COORD" 9911 \
+  --transport rdma --rdma-device "$DEV" --rdma-port "$PORT" --rdma-gid-index "$GID" \
+  --vision "$VISION"
+```
+
+The HTTP API listens only on the coordinator (port 8080); never send inference traffic to peer port 9911. The TCP control connection is intentional, so matching throughput does not by itself prove RDMA — confirm it with the NIC's hardware counters on both hosts (`rdma statistic`, or `ethtool -S <iface> | grep -i roce`).
+
+Full upstream reference: ds4 [`docs/CLUSTERING_ROCM.md`](https://github.com/kyuz0/ds4/blob/main-gfx1151/docs/CLUSTERING_ROCM.md).
+
+---
+
 ## Using with Coding Agents
 
 `ds4-server` can serve as the backend for local coding agents. Example **opencode** config (`~/.config/opencode/opencode.json`):

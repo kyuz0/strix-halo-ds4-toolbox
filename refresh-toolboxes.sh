@@ -3,12 +3,18 @@
 set -e
 
 # List of all known toolboxes and their configurations
+# Group flags are added later based on the container engine, so they are
+# deliberately absent from these option strings.
 declare -A TOOLBOXES
 
-TOOLBOXES["ds4-rocm-10.0"]="docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-10.0 --device /dev/dri --device /dev/kfd --group-add video --group-add render --group-add sudo --security-opt seccomp=unconfined"
-TOOLBOXES["ds4.1f-rocm10.0"]="docker.io/kyuz0/strix-halo-ds4-toolbox:ds4.1f-rocm10.0 --device /dev/dri --device /dev/kfd --group-add video --group-add render --group-add sudo --security-opt seccomp=unconfined"
+TOOLBOXES["ds4-rocm-10.0"]="docker.io/kyuz0/strix-halo-ds4-toolbox:rocm-10.0 --device /dev/dri --device /dev/kfd --security-opt seccomp=unconfined"
+TOOLBOXES["ds4.1f-rocm10.0"]="docker.io/kyuz0/strix-halo-ds4-toolbox:ds4.1f-rocm10.0 --device /dev/dri --device /dev/kfd --security-opt seccomp=unconfined"
 TOOLBOXES["ds4-gfx1201-rocm-7.14"]="docker.io/kyuz0/strix-halo-ds4-toolbox:gfx1201-rocm-7.14 --device /dev/dri --device /dev/kfd --group-add video --group-add render --group-add sudo --security-opt seccomp=unconfined"
 TOOLBOXES["ds4-therock-nightly"]="docker.io/kyuz0/strix-halo-ds4-toolbox:therock-nightly --device /dev/dri --device /dev/kfd --group-add video --group-add render --group-add sudo --security-opt seccomp=unconfined"
+
+# Toolboxes built with RoCE (verbs) support. Only these get /dev/infiniband
+# passed through; the other images have no RDMA code path.
+ROCE_TOOLBOXES=("ds4-rocm-10.0" "ds4.1f-rocm10.0")
 
 function usage() {
   echo "Usage: $0 [all|toolbox-name1 toolbox-name2 ...]"
@@ -20,6 +26,7 @@ function usage() {
 }
 
 # Check OS and set appropriate toolbox command
+ENGINE="docker"
 if [ -f /etc/os-release ]; then
   . /etc/os-release
   if [ "$ID" = "ubuntu" ] || [ "$ID" = "debian" ]; then
@@ -27,6 +34,33 @@ if [ -f /etc/os-release ]; then
   else
     TOOLBOX_CMD="toolbox"
   fi
+fi
+
+# Resolve the underlying container engine. Podman resolves --group-add by name
+# inside the image, which does not match the host video/render GIDs needed for
+# /dev/kfd, so podman gets keep-groups instead. Docker keeps named groups.
+if [ "$TOOLBOX_CMD" = "toolbox" ]; then
+  ENGINE="podman"
+elif [ -n "${DISTROBOX_ENGINE:-}" ]; then
+  ENGINE="$DISTROBOX_ENGINE"
+elif command -v podman > /dev/null; then
+  ENGINE="podman"
+fi
+
+if [ "$ENGINE" = "podman" ]; then
+  GROUP_FLAGS="--group-add keep-groups --group-add sudo"
+else
+  GROUP_FLAGS="--group-add video --group-add render --group-add sudo"
+fi
+echo "ℹ️  Engine: $ENGINE ($GROUP_FLAGS)"
+
+# RoCE/RDMA passthrough: only meaningful when the host exposes verbs devices.
+RDMA_FLAGS=""
+if [ -d /dev/infiniband ]; then
+  echo "🔎 InfiniBand devices detected. Adding RoCE passthrough."
+  RDMA_FLAGS="--device /dev/infiniband --ulimit memlock=-1"
+else
+  echo "ℹ️  No /dev/infiniband on this host; RoCE passthrough skipped."
 fi
 
 # Check dependencies
@@ -67,6 +101,19 @@ for name in "${SELECTED_TOOLBOXES[@]}"; do
   config="${TOOLBOXES[$name]}"
   image=$(echo "$config" | awk '{print $1}')
   options="${config#* }"
+
+  # Only the ROCm 10.0 images are engine-aware; the others keep their literal
+  # options exactly as before.
+  for roce in "${ROCE_TOOLBOXES[@]}"; do
+    if [ "$roce" = "$name" ]; then
+      options="$options $GROUP_FLAGS"
+      if [ -n "$RDMA_FLAGS" ]; then
+        options="$options $RDMA_FLAGS"
+        echo "📡 RoCE enabled for $name (verify inside with: ulimit -l, ibv_devinfo)"
+      fi
+      break
+    fi
+  done
 
   echo "🔄 Refreshing $name (image: $image)"
 

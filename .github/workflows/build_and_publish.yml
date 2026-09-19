@@ -99,6 +99,42 @@ jobs:
             docker run --rm "${LI}" ds4-agent --help || { status=$?; echo "ds4-agent exited with status $status"; [[ $status -eq 0 || $status -eq 1 || $status -eq 2 || $status -eq 132 || $status -eq 134 ]]; }
           fi
 
+          # RoCE is compiled in only when <infiniband/verbs.h> was visible at build
+          # time, so a missing rdma-core-devel silently produces a RoCE-less binary.
+          # Verify the compiled path AND the runtime library/providers.
+          if [[ "${B}" == "rocm-10.0" || "${B}" == "ds4.1f-rocm10.0" ]]; then
+            echo "→ RoCE smoke tests"
+            docker run --rm --entrypoint bash "${LI}" -eu -c '
+              for bin in ds4 ds4-server ds4-bench; do
+                p="$(command -v "$bin")"
+                if grep -aq "rebuild with libibverbs development headers" "$p"; then
+                  echo "FAIL: $bin was built without RoCE (rdma-core-devel missing at build time)"
+                  exit 1
+                fi
+                grep -aq "RoCE: libibverbs.so.1 unavailable" "$p" || {
+                  echo "FAIL: $bin has no RoCE connect path"; exit 1; }
+                echo "  ok: $bin compiled with verbs support"
+              done
+              ldconfig -p | grep -q "libibverbs.so.1" || {
+                echo "FAIL: libibverbs.so.1 absent from the ld cache"; exit 1; }
+              command -v ibv_devinfo >/dev/null || {
+                echo "FAIL: ibv_devinfo missing (libibverbs-utils not installed)"; exit 1; }
+              ldd "$(command -v ibv_devinfo)" | grep -q "libibverbs.so.1 => /" || {
+                echo "FAIL: libibverbs.so.1 does not resolve"; exit 1; }
+              out="$(ibv_devinfo 2>&1 || true)"
+              case "$out" in
+                *"cannot open shared object"*)
+                  echo "FAIL: libibverbs.so.1 failed to load: $out"; exit 1 ;;
+              esac
+              providers="$(ls /usr/lib64/libibverbs/*.so 2>/dev/null | wc -l)"
+              drivers="$(ls /etc/libibverbs.d/*.driver 2>/dev/null | wc -l)"
+              [ "$providers" -gt 0 ] || { echo "FAIL: no userspace verbs providers in /usr/lib64/libibverbs"; exit 1; }
+              [ "$drivers" -gt 0 ] || { echo "FAIL: no /etc/libibverbs.d driver configs"; exit 1; }
+              echo "  ok: libibverbs.so.1 loads, $providers providers, $drivers driver configs"
+              echo "  note: CI has no verbs device; real RoCE traffic is proven by the two-host run"
+            '
+          fi
+
           echo "→ Tag & push immutable → ${IMM}"
           docker tag "${LI}" "${IMM}"
           docker push "${IMM}"

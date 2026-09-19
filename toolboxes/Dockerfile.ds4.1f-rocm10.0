@@ -19,6 +19,7 @@ RUN dnf -y --nodocs --setopt=install_weak_deps=False \
   install \
   make gcc gcc-c++ cmake libcurl-devel ninja-build \
   amdrocm-core-devel10.0-gfx1151 \
+  rdma-core-devel \
   git-core vim sudo rsync patch \
   && dnf clean all && rm -rf /var/cache/dnf/*
 
@@ -59,6 +60,7 @@ RUN microdnf -y --nodocs --setopt=install_weak_deps=0 \
   install \
   bash ca-certificates diffutils libatomic libstdc++ libgcc libgomp sudo \
   amdrocm10.0-gfx1151 \
+  libibverbs libibverbs-utils \
   radeontop procps-ng \
   python3-pip \
   && microdnf clean all && rm -rf /var/cache/dnf/* \
