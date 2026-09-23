@@ -32,8 +32,18 @@ ENV ROCM_PATH=/opt/rocm \
 WORKDIR /opt/ds4
 ARG REPO=https://github.com/kyuz0/ds4.git
 ARG BRANCH=main-gfx1151
+# PR #2: deepseek41: add opt-in decoder SWA bounded replay
+# PR #1012: Server: preserve raw prompts in /v1/completions
 RUN git clone -b ${BRANCH} --single-branch ${REPO} . \
   && git clean -xdf \
+  && curl --fail --location --retry 3 \
+     --output /tmp/ds4-pr-2.patch https://github.com/kyuz0/ds4/pull/2.patch \
+  && git -c user.name='ds4 toolbox build' -c user.email='ds4-build@localhost' \
+     am /tmp/ds4-pr-2.patch \
+  && curl --fail --location --retry 3 \
+     --output /tmp/ds4-pr-1012.patch https://github.com/antirez/ds4/pull/1012.patch \
+  && git -c user.name='ds4 toolbox build' -c user.email='ds4-build@localhost' \
+     am /tmp/ds4-pr-1012.patch \
   && git log -1 --format='ds4 source: %H %s' \
   && make -j"$(nproc)" strix-halo ROCM_ARCH=gfx1151 \
      CFLAGS="-O3 -ffast-math -march=native -Wall -Wextra -std=c99 -D_GNU_SOURCE -fno-finite-math-only -fPIC" \
