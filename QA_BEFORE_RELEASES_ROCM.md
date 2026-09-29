@@ -72,6 +72,11 @@ gh run watch RUN_ID \
   --exit-status
 ```
 
+The build triggers `prune-old-toolboxes.yml`. Wait for that `workflow_run`,
+require its log to report `keeping latest 3`, then inspect both the immutable
+timestamp tag and the channel tag after pruning. They must both exist and have
+the same digest; a green build alone does not complete the release.
+
 Pull the required images and record their IDs. For every distributed run, the
 worker and coordinator IDs for that tag must match:
 
